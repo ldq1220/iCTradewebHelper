@@ -1,0 +1,43 @@
+{
+    "manifest_version": 3,
+    "name": "IC Helper",
+    "version": "1.0",
+    "description": "IC交易网助手",
+    "icons": {
+        "16": "icons/icon16.png",
+        "32": "icons/icon32.png",
+        "48": "icons/icon48.png",
+        "64": "icons/icon64.png",
+        "128": "icons/icon128.png"
+    },
+    "action": {
+        "default_icon": {
+            "128": "icons/icon128.png",
+            "16": "icons/icon16.png",
+            "32": "icons/icon32.png",
+            "48": "icons/icon48.png",
+            "64": "icons/icon64.png"
+        },
+        "default_popup": "popup/popup.html",
+        "default_title": "IC交易网助手"
+    },
+    "content_scripts": [
+        {
+            "matches": [
+                "http://*/*",
+                "https://*/*"
+            ],
+            "js": [
+                "js/processSupply.js",
+                "js/taskProcessor.js",
+                "content.js"
+            ],
+            "type": "module"
+        }
+    ],
+    "permissions": [
+        "activeTab",
+        "tabs",
+        "storage"
+    ]
+}
