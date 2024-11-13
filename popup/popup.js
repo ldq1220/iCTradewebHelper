@@ -14,21 +14,39 @@ document.addEventListener('DOMContentLoaded', function () {
     const searchButton = document.getElementById('searchButton');
 
     /********************** 插件状态开关 *********************/
-    // 从 chrome.storage 获取当前状态
+    // 从 storage 获取当前状态并初始化
     chrome.storage.local.get(['isEnabled'], function (result) {
-        statusToggle.checked = result.isEnabled !== false; // 默认为开启状态
-        updateStatus(statusToggle.checked);
+        const isEnabled = result.isEnabled !== false; // 默认为true
+        statusToggle.checked = isEnabled;
+        updateStatus(isEnabled);
+
+        // 初始化时也发送状态到background
+        chrome.runtime.sendMessage({
+            action: 'toggleStatus',
+            isEnabled: isEnabled
+        });
     });
 
     // 监听开关变化
     statusToggle.addEventListener('change', function () {
         const isEnabled = this.checked;
+        console.log('开关状态改变:', isEnabled); // 调试日志
+
+        // 保存状态
         chrome.storage.local.set({ isEnabled: isEnabled });
+
+        // 更新UI
         updateStatus(isEnabled);
-        chrome.runtime.sendMessage({ action: 'toggleStatus', isEnabled: isEnabled });
+
+        // 发送消息到background
+        chrome.runtime.sendMessage({
+            action: 'toggleStatus',
+            isEnabled: isEnabled
+        }, response => {
+            console.log('background响应:', response); // 调试日志
+        });
     });
 
-    // 更新状态显示
     function updateStatus(isEnabled) {
         if (isEnabled) {
             statusIcon.classList.add('active');
@@ -36,17 +54,14 @@ document.addEventListener('DOMContentLoaded', function () {
             statusText.classList.add('active');
             statusText.classList.remove('inactive');
             statusText.textContent = '正在运行';
-            searchInput.disabled = false;
-            searchButton.disabled = true;
+            searchInput.disabled = true;
         } else {
             statusIcon.classList.remove('active');
             statusIcon.classList.add('inactive');
             statusText.classList.remove('active');
             statusText.classList.add('inactive');
             statusText.textContent = '已停止';
-            searchInput.disabled = true;
-            searchInput.value = '';
-            searchButton.disabled = true;
+            searchInput.disabled = false;
         }
     }
 

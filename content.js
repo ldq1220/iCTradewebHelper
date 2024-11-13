@@ -12,17 +12,27 @@ if (window.location.hostname === 'www.ic.net.cn') {
     // 创建异步函数来执行处理
     async function init() {
         try {
-            const data = await processResultSupply();
-            console.log('IC助手处理结果:', data);
+            // const data = await processResultSupply();
+            // console.log('IC助手处理结果:', data);
+            const cookieData = await ICCUSTOMAPI.getKingdeeCookie();
+            console.log('IC助手执行任务', new Date().toLocaleString(), '\n', cookieData);
         } catch (error) {
             console.error('IC助手处理错误:', error);
         }
     }
 
+    // 添加消息监听器
+    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+        if (message.action === 'startPoll') {
+            init();
+        }
+        return true;
+    });
+
     // 页面加载完成后执行处理函数
-    if (document.readyState === 'complete') {
-        init();
-    } else {
-        window.addEventListener('load', init);
-    }
+    // if (document.readyState === 'complete') {
+    //     init();
+    // } else {
+    //     window.addEventListener('load', init);
+    // }
 }

@@ -11,13 +11,6 @@
         "128": "icons/icon128.png"
     },
     "action": {
-        "default_icon": {
-            "128": "icons/icon128.png",
-            "16": "icons/icon16.png",
-            "32": "icons/icon32.png",
-            "48": "icons/icon48.png",
-            "64": "icons/icon64.png"
-        },
         "default_popup": "popup/popup.html",
         "default_title": "IC交易网助手"
     },
@@ -27,15 +20,23 @@
                 "*://www.ic.net.cn/*"
             ],
             "js": [
+                "js/api.js",
+                "js/poll.js",
                 "js/processSupply.js",
                 "content.js"
-            ],
-            "type": "module"
+            ]
         }
     ],
+    "background": {
+        "service_worker": "background.js"
+    },
     "permissions": [
         "activeTab",
         "tabs",
-        "storage"
+        "storage",
+        "alarms"
+    ],
+    "host_permissions": [
+        "*://www.ic.net.cn/*"
     ]
 }
