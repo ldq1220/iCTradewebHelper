@@ -24,12 +24,10 @@
     "content_scripts": [
         {
             "matches": [
-                "http://*/*",
-                "https://*/*"
+                "*://www.ic.net.cn/*"
             ],
             "js": [
                 "js/processSupply.js",
-                "js/taskProcessor.js",
                 "content.js"
             ],
             "type": "module"
