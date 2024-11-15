@@ -12,10 +12,8 @@ if (window.location.hostname === 'www.ic.net.cn') {
     // 创建异步函数来执行处理
     async function init() {
         try {
-            // const data = await processResultSupply();
-            // console.log('IC助手处理结果:', data);
-            const cookieData = await ICCUSTOMAPI.getKingdeeCookie();
-            console.log('IC助手执行任务', new Date().toLocaleString(), '\n', cookieData);
+            const data = await processResultSupply();
+            console.log('IC助手执行任务', new Date().toLocaleString(), '\n', data);
         } catch (error) {
             console.error('IC助手处理错误:', error);
         }

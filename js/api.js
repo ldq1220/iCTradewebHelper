@@ -1,6 +1,6 @@
 // 创建一个全局对象来存放所有 API 函数
 window.ICCUSTOMAPI = {
-    // 基础请求方法
+    // 请求封装
     async request(url, options = {}) {
         const defaultOptions = {
             method: 'POST',
