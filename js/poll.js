@@ -1,7 +1,7 @@
 const Poll = {
     // 轮询配置
     config: {
-        interval: 60,
+        interval: 30,
         timer: null,
     },
 

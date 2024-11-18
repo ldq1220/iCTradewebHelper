@@ -17,12 +17,13 @@
     "content_scripts": [
         {
             "matches": [
-                "*://www.ic.net.cn/*"
+                "*://www.ic.net.cn/*",
+                "*://member.ic.net.cn/*"
             ],
             "js": [
                 "js/api.js",
                 "js/poll.js",
-                "js/processSupply.js",
+                "js/getSuppliersProcess.js",
                 "content.js"
             ]
         }

@@ -95,10 +95,10 @@ function getCompanyInfo(detailLayer) {
 }
 
 // 处理供应信息
-window.processResultSupply = function (batchSize = 50) {
+window.getSuppliersProcess = function (batchSize = 50) {
     return new Promise((resolve) => {
         try {
-            const results = [];
+            const supplierStore = [];
             const stairTrElements = document.getElementsByClassName("stair_tr");
 
             if (stairTrElements.length === 0) {
@@ -173,7 +173,7 @@ window.processResultSupply = function (batchSize = 50) {
                         });
                     }
 
-                    results.push(elementData);
+                    supplierStore.push(elementData);
                 }
 
                 processedCount = end;
@@ -181,9 +181,17 @@ window.processResultSupply = function (batchSize = 50) {
                 if (processedCount < totalElements) {
                     requestAnimationFrame(processBatch);
                 } else {
+                    supplierStore.sort((a, b) => {
+                        const aHasSscp = a.companyTag.includes('sscp');
+                        const bHasSscp = b.companyTag.includes('sscp');
+                        return (aHasSscp === bHasSscp) ? 0 : (aHasSscp ? -1 : 1);
+                    });
+
+                    let supplierStoreuppliers = supplierStore.filter(item => item.companyName.length > 0 && item.qqAccount.length > 0)
+
                     resolve({
                         success: true,
-                        data: results.filter(item => item.companyName.length > 0 && item.qqAccount.length > 0),
+                        data: supplierStoreuppliers,
                         error: null,
                         getAllCompanyNames: function () {
                             return this.data.reduce(
