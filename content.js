@@ -10,16 +10,6 @@ if (IC_URL.includes(window.location.hostname)) {
         query[key] = value;
     }
 
-    // 获取供应商信息
-    async function getSupplierInfo() {
-        try {
-            const data = await getSupplierProcess();
-            console.log('IC助手执行任务', data);
-        } catch (error) {
-            console.error('IC助手处理错误:', error);
-        }
-    }
-
     // 添加消息监听器
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         if (message.action === 'startPoll') {
@@ -32,10 +22,27 @@ if (IC_URL.includes(window.location.hostname)) {
         return true;
     });
 
-    // 页面加载完成后执行处理函数
-    // if (document.readyState === 'complete') {
-    //     getSupplierInfo();
-    // } else {
-    //     window.addEventListener('load', getSupplierInfo);
-    // }
+
+    async function getSupplierInfo() {
+        try {
+            const { data: { material_code, id } } = await ICCUSTOMAPI.getInquiryTask() // 获取待采集状态的询料任务
+            console.log('ic询料任务', material_code, id);
+            chrome.storage.local.set({ executeGetSuppliersProcess: true }); // 存储状态 等待跳转完成页面加载获取供应商数据
+            await UNTILS.gotoSearchPage(material_code, id) // 跳转至IC交易网对应物料编码的搜索页面
+
+        } catch (error) {
+            console.error('IC助手处理错误:', error);
+        }
+    }
+
+    // 页面加载完成后  检测状态  获取供应商信息
+    window.addEventListener('load', () => {
+        chrome.storage.local.get(['executeGetSuppliersProcess'], async (result) => {
+            if (result.executeGetSuppliersProcess) {
+                const data = await getSuppliersProcess();
+                console.log('IC助手执行任务： ', new Date().toLocaleString(), '\n', data);
+                chrome.storage.local.remove('executeGetSuppliersProcess');  // 执行后清除状态
+            }
+        });
+    });
 }

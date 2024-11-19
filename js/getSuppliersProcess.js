@@ -94,6 +94,25 @@ function getCompanyInfo(detailLayer) {
     return info;
 }
 
+// 根据标签优先级对供应商进行排序
+function sortSuppliersByTagPriority(supplierStore) {
+    const priorityMap = {
+        'yuanchang': 1,
+        'daili': 2,
+        'iccp': 3,
+        'sscp': 4,
+        'redvip': 5,
+        'stock': 6,
+        'icon500': 7
+    };
+
+    supplierStore.sort((a, b) => {
+        const aPriority = Math.min(...a.companyTag.map(tag => priorityMap[tag] || Infinity));
+        const bPriority = Math.min(...b.companyTag.map(tag => priorityMap[tag] || Infinity));
+        return aPriority - bPriority;
+    });
+}
+
 // 处理供应信息
 window.getSuppliersProcess = function (batchSize = 50) {
     return new Promise((resolve) => {
@@ -105,7 +124,7 @@ window.getSuppliersProcess = function (batchSize = 50) {
                 resolve({
                     success: false,
                     data: [],
-                    error: '未找到供应商信息'
+                    error: '当前物料编码，未找到供应商信息。'
                 });
                 return;
             }
@@ -132,7 +151,8 @@ window.getSuppliersProcess = function (batchSize = 50) {
                     const supplyElement = stairTr.querySelector(".result_supply");
                     if (supplyElement) {
                         elementData.company = supplyElement;
-                        const supplyLinks = Array.from(supplyElement.querySelectorAll("a:not(.detailLayer a)"));
+                        const supplyLinks = Array.from(supplyElement.querySelectorAll("a:not(.detailLayer a):not(.result_icons a)"));
+
                         supplyLinks.forEach(async (link) => {
                             if (link.offsetParent !== null) {
                                 // 获取公司信息
@@ -143,9 +163,12 @@ window.getSuppliersProcess = function (batchSize = 50) {
                                 const content = link.textContent.trim();
                                 if (content) elementData.companyName.push(content);
 
-                                const className = link.className;
-                                const title = link.getAttribute("title");
-                                if (className && title) elementData.companyTag.push(className);
+                                // 获取 result_icons 下的所有 a 标签
+                                const iconLinks = supplyElement.querySelectorAll('.result_icons a');
+                                iconLinks.forEach(link => {
+                                    const className = link.className;
+                                    if (className) elementData.companyTag.push(className);
+                                });
                             }
                         });
                     }
@@ -181,14 +204,9 @@ window.getSuppliersProcess = function (batchSize = 50) {
                 if (processedCount < totalElements) {
                     requestAnimationFrame(processBatch);
                 } else {
-                    supplierStore.sort((a, b) => {
-                        const aHasSscp = a.companyTag.includes('sscp');
-                        const bHasSscp = b.companyTag.includes('sscp');
-                        return (aHasSscp === bHasSscp) ? 0 : (aHasSscp ? -1 : 1);
-                    });
 
+                    sortSuppliersByTagPriority(supplierStore); // 根据标签优先级对供应商进行排序
                     let supplierStoreuppliers = supplierStore.filter(item => item.companyName.length > 0 && item.qqAccount.length > 0)
-
                     resolve({
                         success: true,
                         data: supplierStoreuppliers,

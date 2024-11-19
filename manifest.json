@@ -21,6 +21,7 @@
                 "*://member.ic.net.cn/*"
             ],
             "js": [
+                "js/untils.js",
                 "js/api.js",
                 "js/poll.js",
                 "js/getSuppliersProcess.js",

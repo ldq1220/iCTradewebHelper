@@ -1,11 +1,15 @@
 // 创建一个全局对象来存放所有 API 函数
 window.ICCUSTOMAPI = {
+    icCrmBaseUrl: 'https://ic.we5.fun/api',
+    icCrmToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInJvbGVOYW1lIjoicm9vdCIsImlhdCI6MTczMTY1MjQyMywiZXhwIjozMzI4OTI1MjQyM30.9gqsT7pVshkjWL1cHYVXYhxHcoR5cfHQS0p1zOjmQMU',
+
     // 请求封装
     async request(url, options = {}) {
         const defaultOptions = {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${this.icCrmToken}`
             },
             // 默认超时时间 30 秒
             timeout: 30000
@@ -55,4 +59,11 @@ window.ICCUSTOMAPI = {
             }
         });
     },
+
+    // 获取一个待采集的询料任务
+    async getInquiryTask() {
+        return this.request(this.icCrmBaseUrl + `/inquiry_records:get?filter[inquiry_status]=0`, {
+            method: 'GET'
+        });
+    }
 };
