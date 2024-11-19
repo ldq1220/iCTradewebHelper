@@ -10,8 +10,72 @@ document.addEventListener('DOMContentLoaded', function () {
     const statusToggle = document.getElementById('statusToggle');
     const statusIcon = document.querySelector('.status-icon');
     const statusText = document.querySelector('.status-text');
-    const searchInput = document.getElementById('searchInput');
-    const searchButton = document.getElementById('searchButton');
+
+    /************************ 登录状态 ************************/
+    // 检查登录状态
+    chrome.storage.local.get(['token'], function (result) {
+        result.token ? viewHasLoginUi(true) : viewHasLoginUi(false);
+    });
+
+    // 登录按钮事件
+    document.getElementById('loginButton').addEventListener('click', function () {
+        const userAccount = document.getElementById('userAccount').value;
+        const password = document.getElementById('password').value;
+
+        // 调用登录接口
+        fetch('https://ic.we5.fun/api/auth:signIn', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ account: userAccount, password })
+        })
+            .then(response => response.json())
+            .then(async ({ data: { token, user } }) => {
+                console.log('登录成功', token, user);
+                if (token) {
+                    // 存储token和用户信息
+                    await chrome.storage.local.set({ token, user });
+                    viewHasLoginUi(true);
+                }
+            })
+            .catch(error => {
+                console.error('登录错误:', error);
+                alert('登录失败，请检查用户名和密码');
+            });
+    });
+
+    // 退出登录按钮事件
+    document.getElementById('logoutButton').addEventListener('click', async function () {
+        // 清除token和用户信息
+        await chrome.storage.local.remove(['token', 'user']);
+        // 更新UI
+        viewHasLoginUi(false);
+
+        statusToggle.checked = false; // 设置开关为关闭
+        chrome.storage.local.set({ isEnabled: false }); // 更新存储状态
+        updateStatus(false); // 更新UI状态
+    });
+
+    // 显示登录状态UI
+    function viewHasLoginUi(hasLogin) {
+        if (hasLogin) {
+            chrome.storage.local.get(['user'], function (result) {
+                const user = result.user;
+                document.getElementById('loginForm').style.display = 'none';
+                document.querySelector('.status-card').style.display = 'block'; // 显示状态卡
+                document.querySelector('.info-section').style.display = 'block'; // 显示信息部分    
+                document.getElementById('usernameDisplay').textContent = user.username; // 显示用户名
+                document.getElementById('logoutButton').style.display = 'block'; // 显示退出登录按钮
+            });
+        } else {
+            document.getElementById('loginForm').style.display = 'block';
+            document.querySelector('.status-card').style.display = 'none'; // 隐藏状态卡
+            document.querySelector('.info-section').style.display = 'none'; // 隐藏信息部分
+            document.getElementById('usernameDisplay').textContent = ''; // 隐藏用户名
+            document.getElementById('logoutButton').style.display = 'none'; // 隐藏退出登录按钮
+        }
+    }
 
     /********************** 插件状态开关 *********************/
     // 从 storage 获取当前状态并初始化
@@ -54,44 +118,13 @@ document.addEventListener('DOMContentLoaded', function () {
             statusText.classList.add('active');
             statusText.classList.remove('inactive');
             statusText.textContent = '正在运行';
-            searchInput.disabled = true;
         } else {
             statusIcon.classList.remove('active');
             statusIcon.classList.add('inactive');
             statusText.classList.remove('active');
             statusText.classList.add('inactive');
             statusText.textContent = '已停止';
-            searchInput.disabled = false;
         }
     }
-
-    /******************** 搜索按钮 **************************/
-    // 监听输入框变化
-    searchInput.addEventListener('input', function () {
-        // 根据输入框是否有内容来设置按钮状态
-        searchButton.disabled = !this.value.trim();
-    });
-
-
-    // 添加按钮点击事件
-    searchButton.addEventListener('click', function () {
-        const searchValue = searchInput.value.trim();
-        if (searchValue) {
-            // 在当前标签页更新URL
-            chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-                const url = `https://www.ic.net.cn/search/${searchValue}.html?page=1&jobId=666`;
-                chrome.tabs.update(tabs[0].id, { url: url });
-                // 关闭弹出窗口
-                window.close();
-            });
-        }
-    });
-
-    // 添加输入框回车事件
-    searchInput.addEventListener('keypress', function (e) {
-        if (e.key === 'Enter' && !searchButton.disabled) {
-            searchButton.click();
-        }
-    });
 });
 

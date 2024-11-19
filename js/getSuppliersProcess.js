@@ -114,7 +114,7 @@ function sortSuppliersByTagPriority(supplierStore) {
 }
 
 // 处理供应信息
-window.getSuppliersProcess = function (batchSize = 50) {
+window.getSuppliersProcess = function (inquiry_supplier_number = 10, batchSize = 50) {
     return new Promise((resolve) => {
         try {
             const supplierStore = [];
@@ -209,7 +209,7 @@ window.getSuppliersProcess = function (batchSize = 50) {
                     let supplierStoreuppliers = supplierStore.filter(item => item.companyName.length > 0 && item.qqAccount.length > 0)
                     resolve({
                         success: true,
-                        data: supplierStoreuppliers,
+                        data: supplierStoreuppliers.slice(0, inquiry_supplier_number),
                         error: null,
                         getAllCompanyNames: function () {
                             return this.data.reduce(

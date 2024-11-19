@@ -1,15 +1,18 @@
 // 创建一个全局对象来存放所有 API 函数
 window.ICCUSTOMAPI = {
-    icCrmBaseUrl: 'https://ic.we5.fun/api',
-    icCrmToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInJvbGVOYW1lIjoicm9vdCIsImlhdCI6MTczMTY1MjQyMywiZXhwIjozMzI4OTI1MjQyM30.9gqsT7pVshkjWL1cHYVXYhxHcoR5cfHQS0p1zOjmQMU',
-
     // 请求封装
-    async request(url, options = {}) {
+    async request(endpoint, options = {}) {
+        const icCrmBaseUrl = 'https://ic.we5.fun/api'; // 将 base URL 封装在这里
+
+        // 从 chrome.storage 中获取 token
+        const result = await chrome.storage.local.get(['token']);
+        const token = result.token;
+
         const defaultOptions = {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${this.icCrmToken}`
+                'Authorization': `Bearer ${token}` // 使用从 storage 中获取的 token
             },
             // 默认超时时间 30 秒
             timeout: 30000
@@ -37,32 +40,32 @@ window.ICCUSTOMAPI = {
             });
 
             // 发起请求
-            const fetchPromise = fetch(url, finalOptions);
+            const fetchPromise = fetch(`${icCrmBaseUrl}${endpoint}`, finalOptions); // 使用封装的 base URL
             const response = await Promise.race([fetchPromise, timeoutPromise]);
 
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
 
-            return await response.json();
+            const respone = await response.json();
+            return respone.data;
         } catch (error) {
             console.error('请求失败:', error);
             throw error;
         }
     },
 
-    // API 方法
-    async getKingdeeCookie() {
-        return this.request('https://tk04dul26h.gzg.sealos.run/hjs/getKingdeeCookie', {
-            body: {
-                logicFlowAppId: 1164
-            }
+    /*********************** API 方法 ***********************/
+    // 获取系统配置
+    async getSystemConfig() {
+        return this.request(`/parameter_config:get`, {
+            method: 'GET'
         });
     },
 
     // 获取一个待采集的询料任务
     async getInquiryTask() {
-        return this.request(this.icCrmBaseUrl + `/inquiry_records:get?filter[inquiry_status]=0`, {
+        return this.request(`/inquiry_records:get?filter[inquiry_status]=0`, {
             method: 'GET'
         });
     }

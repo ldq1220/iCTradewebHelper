@@ -17,19 +17,20 @@ if (IC_URL.includes(window.location.hostname)) {
             const hasLogin = window.location.href.includes('login.php') // 是否在登录页
             if (hasLogin) return console.log('未登录');
 
-            getSupplierInfo(); // 获取供应商信息
+            hanldeInquiryTask(); // 处理询料任务
         }
-        return true;
+        return true; // 返回true表示异步处理
     });
 
 
-    async function getSupplierInfo() {
+    // 处理询料任务
+    async function hanldeInquiryTask() {
         try {
-            const { data: { material_code, id } } = await ICCUSTOMAPI.getInquiryTask() // 获取待采集状态的询料任务
-            console.log('ic询料任务', material_code, id);
+            const { material_code, id } = await ICCUSTOMAPI.getInquiryTask() // 获取待采集状态的询料任务
+            if (!material_code || !id) return console.error('当前询料任务没有标准物料。');
+
             chrome.storage.local.set({ executeGetSuppliersProcess: true }); // 存储状态 等待跳转完成页面加载获取供应商数据
             await UNTILS.gotoSearchPage(material_code, id) // 跳转至IC交易网对应物料编码的搜索页面
-
         } catch (error) {
             console.error('IC助手处理错误:', error);
         }
@@ -39,7 +40,9 @@ if (IC_URL.includes(window.location.hostname)) {
     window.addEventListener('load', () => {
         chrome.storage.local.get(['executeGetSuppliersProcess'], async (result) => {
             if (result.executeGetSuppliersProcess) {
-                const data = await getSuppliersProcess();
+                const { inquiry_supplier_number } = await ICCUSTOMAPI.getSystemConfig() // 获取系统配置
+
+                const data = await getSuppliersProcess(inquiry_supplier_number);
                 console.log('IC助手执行任务： ', new Date().toLocaleString(), '\n', data);
                 chrome.storage.local.remove('executeGetSuppliersProcess');  // 执行后清除状态
             }

@@ -9,23 +9,38 @@
 <body>
     <div class="container">
         <header class="header">
-            <img src="../icons/icon48.png" alt="logo" class="logo">
-            <h1>IC Helper</h1>
+            <div class="plugin">
+                <img src="../icons/icon48.png" alt="logo" class="logo">
+                <h1>IC Helper</h1>
+            </div>
+            <div class="user">
+                <span id="usernameDisplay"></span> <!-- 用户名显示 -->
+                <button id="logoutButton" class="custom-button">退出登录</button>
+            </div>
         </header>
 
-        <div class="content">
-            <div class="status-card">
-                <div class="status-left">
-                    <div class="status-icon active"></div>
-                    <span>插件运行状态: </span>
-                    <span class="status-text active">正在运行</span>
-                </div>
-                <label class="switch">
-                    <input type="checkbox" id="statusToggle" checked>
-                    <span class="slider round"></span>
-                </label>
+        <div class="content" id="content">
+            <!-- 登录表单 -->
+            <div id="loginForm" style="display: none;">
+                <input type="text" id="userAccount" placeholder="用户名/邮箱">
+                <input type="password" id="password" placeholder="密码">
+                <button id="loginButton" class="custom-button">登录</button>
             </div>
+            <!-- 插件Container -->
+            <div class="status-card">
+                <div class="status-card-flex">
+                    <div class="status-left">
+                        <div class="status-icon active"></div>
+                        <span>插件运行状态: </span>
+                        <span class="status-text active">正在运行</span>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="statusToggle" checked>
+                        <span class="slider round"></span>
+                    </label>
+                </div>
 
+            </div>
             <div class="info-section">
                 <h2>当前页面信息</h2>
                 <div class="info-item">
@@ -37,10 +52,6 @@
                     <span class="value" id="query">-</span>
                 </div>
             </div>
-        </div>
-        <div class="search-section">
-            <input type="text" id="searchInput" class="search-input" placeholder="请输入搜索物料">
-            <button id="searchButton" class="custom-button" disabled>搜索</button>
         </div>
 
         <footer class="footer">
