@@ -65,7 +65,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 document.getElementById('loginForm').style.display = 'none';
                 document.querySelector('.status-card').style.display = 'block'; // 显示状态卡
                 document.querySelector('.info-section').style.display = 'block'; // 显示信息部分    
-                document.getElementById('usernameDisplay').textContent = user.username; // 显示用户名
+                document.getElementById('usernameDisplay').textContent = user.nickname; // 显示用户名
                 document.getElementById('logoutButton').style.display = 'block'; // 显示退出登录按钮
             });
         } else {
@@ -126,5 +126,21 @@ document.addEventListener('DOMContentLoaded', function () {
             statusText.textContent = '已停止';
         }
     }
+
+    /********************** 监听token user存储变化  退出登录 */
+    chrome.storage.onChanged.addListener(function (changes, namespace) {
+        // 只关注本地存储的变化
+        if (namespace === 'local') {
+            // 如果token或user发生了变化
+            if (changes.token || changes.user) {
+                // 检查token是否被删除了
+                if (!changes.token?.newValue || !changes.user?.newValue) {
+                    viewHasLoginUi(false); // 更新UI为未登录状态
+                    statusToggle.checked = false; // 关闭状态开关
+                    updateStatus(false); // 更新状态显示
+                }
+            }
+        }
+    });
 });
 

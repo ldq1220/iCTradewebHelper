@@ -7,6 +7,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         message.isEnabled ? Poll.startPolling() : Poll.stopPolling();
         sendResponse({ success: true }); // 发送响应
     }
+
+    // 插件 登录过期的消息
+    if (message.action === 'loginExpired') {
+        stopTask(); // 停止当前运行的任务
+        isEnabled = false; // 设置启用状态为 false
+        chrome.storage.local.set({ isEnabled: false }); // 更新存储中的状态
+        sendResponse({ success: true });
+    }
+
     return true; // 保持消息通道开启
 });
 
@@ -35,7 +44,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "gotoSearchPage") {
         const { searchValue, inquiryId } = request;
         chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-            const url = `https://www.ic.net.cn/search/${searchValue}.html?page=1&inquiryId=${inquiryId}`;
+            const url = `https://www.ic.net.cn/search/${searchValue.trim()}.html?page=1&inquiryId=${inquiryId}`;
             chrome.tabs.update(tabs[0].id, { url: url });
         });
     }
