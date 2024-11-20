@@ -113,6 +113,31 @@ function sortSuppliersByTagPriority(supplierStore) {
     });
 }
 
+// 总结供应商信息 ==> 排序&过滤&去重&截取
+function summarizeSuppliers(supplierStore, inquiry_supplier_number) {
+    // 先排序
+    sortSuppliersByTagPriority(supplierStore);
+
+    // 过滤无效数据并去重
+    const seenCompanies = new Set();
+    let storage = supplierStore
+        .filter(item => item.companyName.length > 0 && item.qqAccount.length > 0)
+        .filter(item => {
+            // 获取第一个公司名作为唯一标识
+            const companyName = item.companyName[0];
+            // 如果这个公司名已经出现过，返回false过滤掉
+            if (seenCompanies.has(companyName)) {
+                return false;
+            }
+            // 否则添加到Set中并保留这条数据
+            seenCompanies.add(companyName);
+            return true;
+        });
+
+    // 返回指定数量的供应商
+    return storage.slice(0, inquiry_supplier_number);
+}
+
 // 处理供应信息
 window.getSuppliersProcess = function (inquiry_supplier_number = 10, batchSize = 50) {
     return new Promise((resolve) => {
@@ -143,6 +168,7 @@ window.getSuppliersProcess = function (inquiry_supplier_number = 10, batchSize =
                         visibleLinks: [],
                         companyName: [],
                         companyTag: [],
+                        companyInfo: {},
                         materialId: [],
                         qqAccount: []
                     };
@@ -204,12 +230,10 @@ window.getSuppliersProcess = function (inquiry_supplier_number = 10, batchSize =
                 if (processedCount < totalElements) {
                     requestAnimationFrame(processBatch);
                 } else {
-
-                    sortSuppliersByTagPriority(supplierStore); // 根据标签优先级对供应商进行排序
-                    let supplierStoreuppliers = supplierStore.filter(item => item.companyName.length > 0 && item.qqAccount.length > 0)
+                    let supplierStoreuppliers = summarizeSuppliers(supplierStore, inquiry_supplier_number)
                     resolve({
                         success: true,
-                        data: supplierStoreuppliers.slice(0, inquiry_supplier_number),
+                        data: supplierStoreuppliers,
                         error: null,
                         getAllCompanyNames: function () {
                             return this.data.reduce(

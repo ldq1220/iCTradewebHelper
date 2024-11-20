@@ -1,5 +1,5 @@
 // 创建一个全局对象来存放所有 API 函数
-window.ICCUSTOMAPI = {
+window.ICCRMAPI = {
     // 请求封装
     async request(endpoint, options = {}) {
         const icCrmBaseUrl = 'https://ic.we5.fun/api'; // 将 base URL 封装在这里
@@ -44,6 +44,9 @@ window.ICCUSTOMAPI = {
             const response = await Promise.race([fetchPromise, timeoutPromise]);
 
             if (!response.ok) {
+                if (response.status == 403) {
+                    throw new Error(`登录态过期。请重新登录。HTTP status: ${response.status}`);
+                }
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
 
@@ -67,6 +70,29 @@ window.ICCUSTOMAPI = {
     async getInquiryTask() {
         return this.request(`/inquiry_records:get?filter[inquiry_status]=0`, {
             method: 'GET'
+        });
+    },
+
+    // 更新询料任务
+    async updateInquiryTask(id, data) {
+        return this.request(`/inquiry_records:update?filterByTk=${id}`, {
+            method: 'PUT',
+            body: data
+        });
+    },
+
+    // 获取一个供应商信息
+    async getSupplierInfo(company_name) {
+        return this.request(`/suppliers:get?filter[company_name]=${company_name}`, {
+            method: 'GET'
+        })
+    },
+
+    // 更新供应商信息
+    async updateSupplierInfo(companyName, data) {
+        return this.request(`/suppliers:update?filter[company_name]=${companyName}`, {
+            method: 'PUT',
+            body: data
         });
     }
 };
