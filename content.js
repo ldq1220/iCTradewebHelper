@@ -37,7 +37,7 @@ if (IC_URL.includes(window.location.hostname)) {
         if (message.action === 'startPoll') {
             logger.info('开始轮询');
             const hasLogin = window.location.href.includes('login.php') // 是否在登录页
-            if (hasLogin) return logger.info('未登录状态');;
+            if (hasLogin) return logger.info('IC交易网处于未登录状态');
 
             handleInquiryTask(); // 处理询料任务
         }

@@ -47,9 +47,9 @@ window.ICCRMAPI = {
                 if (response.status == 403) {
                     await chrome.storage.local.remove(['token', 'user']);  // 清除登录信息
                     chrome.runtime.sendMessage({ action: 'loginExpired' });  // 通知background脚本登录已过期
-                    throw new Error(`登录态过期。请重新登录。HTTP status: ${response.status}`);
+                    throw new Error(`IC助手，登录态过期。请重新登录。HTTP status: ${response.status}`);
                 }
-                throw new Error(`HTTP error! status: ${response.status}`);
+                throw new Error(`IC助手，HTTP error! status: ${response.status}`);
             }
 
             const respone = await response.json();
