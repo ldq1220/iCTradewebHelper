@@ -69,25 +69,48 @@ window.ICCRMAPI = {
     },
 
     // 获取一个待采集的询料任务
-    async getInquiryTask() {
-        return this.request(`/inquiry_records:get?filter[inquiry_status]=0`, {
+    async getInquiryRecord(id) {
+        return this.request(`/inquiry_records:get?filter[id]=${id}`, {
             method: 'GET'
         });
     },
 
     // 更新询料任务
-    async updateInquiryTask(id, data) {
+    async updateInquiryRecord(id, data) {
         return this.request(`/inquiry_records:update?filterByTk=${id}`, {
-            method: 'PUT',
+            method: 'POST',
+            body: data
+        });
+    },
+
+    // 获取一条 待采集状态的 询料物料
+    async getInquiryMaterial() {
+        return this.request(`/inquiry_materials:get?filter={"$and":[null,null,{"$or":[{"inquiry_material_status":{"$empty":true}},{"inquiry_material_status":{"$eq":"0"}}]}]}`, {
+            method: 'GET'
+        });
+    },
+
+    // 更新 询料物料
+    async updateInquiryMaterial(id, data) {
+        return this.request(`/inquiry_materials:update?filter[id]=${id}`, {
+            method: 'POST',
             body: data
         });
     },
 
     // 获取一个供应商信息
     async getSupplierInfo(company_name) {
-        return this.request(`/suppliers:get?filter[company_name]=${company_name}`, {
+        return this.request(`/suppliers:get?filter[company_name]=${company_name}&appends=companys,brands,inquiry_material`, {
             method: 'GET'
         })
+    },
+
+    // 创建供应商信息
+    async createSupplierInfo(data) {
+        return this.request(`/suppliers:create`, {
+            method: 'POST',
+            body: data
+        });
     },
 
     // 更新供应商信息
