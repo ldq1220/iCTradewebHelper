@@ -35,24 +35,26 @@ if (IC_URL.includes(window.location.hostname)) {
     // 添加消息监听器
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         if (message.action === 'startPoll') {
-            try {
-                logger.info('开始轮询');
-                const hasLogin = window.location.href.includes('login.php') // 是否在登录页
-                if (hasLogin) {
-                    logger.info('IC交易网处于未登录状态');
-                    sendResponse({ success: false, error: '未登录状态' });
-                    return;
-                }
+            (async () => {
+                try {
+                    logger.info('开始轮询');
+                    const hasLogin = window.location.href.includes('login.php')
+                    if (hasLogin) {
+                        logger.info('IC交易网处于未登录状态');
+                        sendResponse({ success: false, error: '未登录状态' });
+                        return;
+                    }
 
-                handleInquiryTask();
-                sendResponse({ success: true });
-            } catch (error) {
-                logger.error('轮询过程发生错误:', error);
-                sendResponse({
-                    success: false,
-                    error: error.message || '执行过程发生错误'
-                });
-            }
+                    await handleInquiryTask(); // 等待异步任务完成
+                    sendResponse({ success: true });
+                } catch (error) {
+                    logger.error('轮询过程发生错误:', error);
+                    sendResponse({
+                        success: false,
+                        error: error.message || '执行过程发生错误'
+                    });
+                }
+            })();
 
             return true; // 保持消息通道开启
         }
@@ -120,11 +122,6 @@ if (IC_URL.includes(window.location.hostname)) {
 
                 const supplierInfo = {
                     company_name: companyName.join(' '),
-                    brands: brands.length > 0 ? brands.map(item => ({
-                        f_supplier: companyName,
-                        proportion: item.percentage,
-                        brand_name: item.name,
-                    })) : [],
                     company_tag: companyTag,
                     qq_account: qqAccount,
                     member_years: memberYears,
@@ -137,7 +134,7 @@ if (IC_URL.includes(window.location.hostname)) {
 
                 if (supplierResult) {
                     // 更新供应商信息
-                    const { company_ids, inquiry_material } = supplierResult;
+                    const { company_ids, inquiry_material, brands: supplierBrands } = supplierResult;
                     if (!company_ids.includes(userCompanyId)) company_ids.push(userCompanyId) // 关联公司ids
 
                     const inquiryMaterialIds = inquiry_material.map(item => item.id)
@@ -146,6 +143,14 @@ if (IC_URL.includes(window.location.hostname)) {
                     await ICCRMAPI.updateSupplierInfo(companyName, {
                         company_ids,
                         inquiry_material: inquiryMaterialIds.map(item => { return { id: item } }),
+                        brands: brands.length > 0 ? brands.map(item => {
+                            const existingBrand = supplierBrands?.find(b => b.brand_name === item.name); // 查找相同名称的已有品牌
+                            return {
+                                id: existingBrand?.id, // 保留已有品牌的id
+                                proportion: item.percentage,
+                                brand_name: item.name,
+                            }
+                        }) : [],
                         ...supplierInfo
                     })
                 } else {
@@ -153,6 +158,10 @@ if (IC_URL.includes(window.location.hostname)) {
                     await ICCRMAPI.createSupplierInfo({
                         company_ids: [userCompanyId],
                         inquiry_material: [{ id: query.inquiryMaterialId }],
+                        brands: brands.length > 0 ? brands.map(item => ({
+                            proportion: item.percentage,
+                            brand_name: item.name,
+                        })) : [],
                         ...supplierInfo
                     })
                 }
