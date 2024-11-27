@@ -35,13 +35,27 @@ if (IC_URL.includes(window.location.hostname)) {
     // 添加消息监听器
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         if (message.action === 'startPoll') {
-            logger.info('开始轮询');
-            const hasLogin = window.location.href.includes('login.php') // 是否在登录页
-            if (hasLogin) return logger.info('IC交易网处于未登录状态');
+            try {
+                logger.info('开始轮询');
+                const hasLogin = window.location.href.includes('login.php') // 是否在登录页
+                if (hasLogin) {
+                    logger.info('IC交易网处于未登录状态');
+                    sendResponse({ success: false, error: '未登录状态' });
+                    return;
+                }
 
-            handleInquiryTask(); // 处理询料任务
+                handleInquiryTask();
+                sendResponse({ success: true });
+            } catch (error) {
+                logger.error('轮询过程发生错误:', error);
+                sendResponse({
+                    success: false,
+                    error: error.message || '执行过程发生错误'
+                });
+            }
+
+            return true; // 保持消息通道开启
         }
-        return true; // 返回true表示异步处理
     });
 
 
