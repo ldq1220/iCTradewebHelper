@@ -1,7 +1,7 @@
 /**
  * 采集流程
  * 1. 查询 物料询料 表 inquiry_material_status = 0
- * 2. 通过1的数据，拿到 询料记录id: inquiry_record_id , 查这条记录 检查状态：inquiry_status == 0 ? 2 : inquiry_status
+ * 2. 通过1的数据，拿到 询料记录id: inquiry_record_id , 查这条记录 检查状态：inquiry_status == 0 ? 1 : inquiry_status
  * 3. 跳转至IC交易网 对应物料编码的搜索页面
  * 4. 页面加载完成后，检测状态 获取供应商信息  suppliers.length === 0 ? return 采集失败 inquiry_material_status = 1 : 采集成功继续  inquiry_material_status = 2  
  * 5. 更新供应商。 先通过供应商公司名查询
@@ -74,7 +74,7 @@ if (IC_URL.includes(window.location.hostname)) {
             const inquiryRecordResult = await ICCRMAPI.getInquiryRecord(inquiry_record_id) // 获取 询料记录
             if (!inquiryRecordResult) return logger.info('当前询料记录不存在。');
 
-            if (inquiryRecordResult.inquiry_status == "0") await ICCRMAPI.updateInquiryRecord(inquiry_record_id, { inquiry_status: "2" }) // 更新询料任务状态为 采集中
+            if (inquiryRecordResult.inquiry_status == "0") await ICCRMAPI.updateInquiryRecord(inquiry_record_id, { inquiry_status: "1" }) // 更新询料任务状态为 待询价
             chrome.storage.local.set({ executeGetSuppliersProcess: true }); // 存储状态 等待跳转完成页面加载获取供应商数据
 
             await sleep(2000) // 等待2秒
@@ -90,7 +90,7 @@ if (IC_URL.includes(window.location.hostname)) {
 
         await chrome.storage.local.get(['executeGetSuppliersProcess'], async (result) => {
             if (result.executeGetSuppliersProcess) {
-                const { inquiry_supplier_number } = await ICCRMAPI.getSystemConfig() // 获取系统配置
+                const { inquiry_supplier_number, purchase_bot_id } = await ICCRMAPI.getSystemConfig() // 获取系统配置
 
                 const suppliersResult = await getSuppliersProcess(inquiry_supplier_number); // 获取供应商信息
                 logger.info('获取供应商信息执行任务结果:', suppliersResult);
@@ -102,13 +102,13 @@ if (IC_URL.includes(window.location.hostname)) {
                     ICCRMAPI.updateInquiryMaterial(query.inquiryMaterialId, { inquiry_material_status: "1", gather_error: error },); // 更新询料物料状态为 采集失败
                 } else {
                     await ICCRMAPI.updateInquiryMaterial(query.inquiryMaterialId, { inquiry_material_status: "2" },); // 更新询料物料状态为 采集成功
-                    await handleSupplierData(data) // 处理供应商数据
+                    await handleSupplierData(data, purchase_bot_id) // 处理供应商数据
                 }
             }
         });
 
         // 处理 供应商数据
-        async function handleSupplierData(data) {
+        async function handleSupplierData(data, purchase_bot_id) {
             const { user } = await new Promise(resolve => {
                 chrome.storage.local.get(['user'], resolve);
             });
@@ -121,7 +121,7 @@ if (IC_URL.includes(window.location.hostname)) {
                 const supplierResult = await ICCRMAPI.getSupplierInfo(companyName); // 获取IC CRM中 供应商信息
 
                 const supplierInfo = {
-                    company_name: companyName.join(' '),
+                    company_name: companyName,
                     company_tag: companyTag,
                     qq_account: qqAccount,
                     member_years: memberYears,
@@ -165,7 +165,25 @@ if (IC_URL.includes(window.location.hostname)) {
                         ...supplierInfo
                     })
                 }
+
+                // 处理供应商联系人
+                const supplierContactInfo = {
+                    company_id: user.company_id, // 所属公司
+                    supplier_name: companyName, // 所属供应商
+                    imUserId: qqAccount.length > 0 ? qqAccount[0] : '', // 联系人qq
+                    imBotUserId: purchase_bot_id, // 机器人ID
+                    imPlatform: 'qq', // 平台
+                    imIsGroup: '0' // 是否群 0:好友 1:群
+                }
+                await handleSuppliercontact(supplierContactInfo)
             }));
+        }
+
+        // 处理供应商联系人
+        async function handleSuppliercontact(supplierContactInfo) {
+            const { company_id, supplier_name } = supplierContactInfo;
+            const supplierContactResult = await ICCRMAPI.getSupplierContact(company_id, supplier_name)
+            if (!supplierContactResult) await ICCRMAPI.createSupplierContact(supplierContactInfo)
         }
     });
 }

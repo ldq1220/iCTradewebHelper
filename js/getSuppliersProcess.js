@@ -135,7 +135,8 @@ function summarizeSuppliers(supplierStore, inquiry_supplier_number) {
         });
 
     // 返回指定数量的供应商
-    return storage.slice(0, inquiry_supplier_number);
+    const result = storage.slice(0, inquiry_supplier_number).map(item => ({ ...item, companyName: item.companyName[0] }));
+    return result;
 }
 
 // 处理供应信息

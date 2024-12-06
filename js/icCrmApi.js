@@ -119,5 +119,21 @@ window.ICCRMAPI = {
             method: 'PUT',
             body: data
         });
+    },
+
+    // 获取供应商联系人
+    async getSupplierContact(companyId, supplierName) {
+        return this.request(`/supplier_contact:get?filter={"company_id":${companyId},"supplier_name":"${supplierName}"}`, {
+            method: 'GET'
+        });
+    },
+
+    // 创建供应商联系人
+    async createSupplierContact(data) {
+        return this.request(`/supplier_contact:create`, {
+            method: 'POST',
+            body: data
+        });
     }
 };
+
