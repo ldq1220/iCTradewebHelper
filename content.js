@@ -67,14 +67,10 @@ if (IC_URL.includes(window.location.hostname)) {
             // 先清除上一次的状态
             await chrome.storage.local.remove('executeGetSuppliersProcess');
 
-            const inquiryMaterialResult = await ICCRMAPI.getInquiryMaterial() // 获取待采集状态的询料任务
+            const inquiryMaterialResult = await ICCRMAPI.getInquiryMaterialByStatus() // 获取待采集状态的询料任务
             if (!inquiryMaterialResult || !inquiryMaterialResult?.material_code) return logger.info('当前询料物料没有标准物料。')
             const { inquiry_record_id, id, material_code } = inquiryMaterialResult
 
-            const inquiryRecordResult = await ICCRMAPI.getInquiryRecord(inquiry_record_id) // 获取 询料记录
-            if (!inquiryRecordResult) return logger.info('当前询料记录不存在。');
-
-            if (inquiryRecordResult.inquiry_status == "0") await ICCRMAPI.updateInquiryRecord(inquiry_record_id, { inquiry_status: "1" }) // 更新询料任务状态为 待询价
             chrome.storage.local.set({ executeGetSuppliersProcess: true }); // 存储状态 等待跳转完成页面加载获取供应商数据
 
             await sleep(2000) // 等待2秒
@@ -90,19 +86,21 @@ if (IC_URL.includes(window.location.hostname)) {
 
         await chrome.storage.local.get(['executeGetSuppliersProcess'], async (result) => {
             if (result.executeGetSuppliersProcess) {
+                const inquiryRecordResult = await ICCRMAPI.getInquiryRecord(query.inquiryRecordId) // 获取 询料记录
                 const { inquiry_supplier_number, purchase_bot_id } = await ICCRMAPI.getSystemConfig() // 获取系统配置
-
                 const suppliersResult = await getSuppliersProcess(inquiry_supplier_number); // 获取供应商信息
                 logger.info('获取供应商信息执行任务结果:', suppliersResult);
-                chrome.storage.local.remove('executeGetSuppliersProcess');  // 执行后清除状态s
+                chrome.storage.local.remove('executeGetSuppliersProcess');  // 执行后清除状态
 
                 // 更新询料任务
                 const { success, data, error } = suppliersResult;
                 if (!success || !data.length) {
                     ICCRMAPI.updateInquiryMaterial(query.inquiryMaterialId, { inquiry_material_status: "1", gather_error: error },); // 更新询料物料状态为 采集失败
+                    if (inquiryRecordResult.inquiry_status == "0") await ICCRMAPI.updateInquiryRecord(query.inquiryRecordId, { inquiry_status: "-1", gather_error: error }) // 更新询料任务状态为 采集失败
                 } else {
-                    await ICCRMAPI.updateInquiryMaterial(query.inquiryMaterialId, { inquiry_material_status: "2" },); // 更新询料物料状态为 采集成功
                     await handleSupplierData(data, purchase_bot_id) // 处理供应商数据
+                    await ICCRMAPI.updateInquiryMaterial(query.inquiryMaterialId, { inquiry_material_status: "2" },); // 更新询料物料状态为 待询价
+                    await ICCRMAPI.updateInquiryRecord(query.inquiryRecordId, { inquiry_status: "1" }) // 更新询料任务状态为 待询价
                 }
             }
         });
@@ -173,7 +171,7 @@ if (IC_URL.includes(window.location.hostname)) {
                     imUserId: qqAccount.length > 0 ? qqAccount[0] : '', // 联系人qq
                     imBotUserId: purchase_bot_id, // 机器人ID
                     imPlatform: 'qq', // 平台
-                    imIsGroup: '0' // 是否群 0:好友 1:群
+                    imIsGroup: '好友'
                 }
                 await handleSuppliercontact(supplierContactInfo)
             }));

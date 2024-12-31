@@ -68,7 +68,7 @@ window.ICCRMAPI = {
         });
     },
 
-    // 获取一个待采集的询料任务
+    // 获取一个询料任务
     async getInquiryRecord(id) {
         return this.request(`/inquiry_records:get?filter[id]=${id}`, {
             method: 'GET'
@@ -84,8 +84,15 @@ window.ICCRMAPI = {
     },
 
     // 获取一条 待采集状态的 询料物料
-    async getInquiryMaterial() {
-        return this.request(`/inquiry_materials:get?filter={"$and":[null,null,{"$or":[{"inquiry_material_status":{"$empty":true}},{"inquiry_material_status":{"$eq":"0"}}]}]}`, {
+    async getInquiryMaterialByStatus() {
+        return this.request(`/inquiry_materials:get?filter={"inquiry_material_status": "0"}`, {
+            method: 'GET'
+        });
+    },
+
+    // 获取询料物料
+    async getInquiryMaterialById(id) {
+        return this.request(`/inquiry_materials:get?filter[id]=${id}`, {
             method: 'GET'
         });
     },
