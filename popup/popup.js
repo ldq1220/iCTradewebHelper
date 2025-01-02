@@ -1,4 +1,13 @@
+async function updateLastRunTime() {
+    const result = await chrome.storage.local.get(['lastPollTime']);
+    const lastRunTimeElement = document.getElementById('lastRunTime');
+    lastRunTimeElement.textContent = result.lastPollTime || '-';
+}
+
 document.addEventListener('DOMContentLoaded', function () {
+    // 更新上次运行时间
+    updateLastRunTime();
+
     // 获取当前标签页信息
     chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
         const url = new URL(tabs[0].url);

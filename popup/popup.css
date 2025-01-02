@@ -80,6 +80,7 @@ body {
 
 .status-text {
   font-weight: 500;
+  margin-left: 8px;
 }
 
 .status-text.active {

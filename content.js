@@ -38,6 +38,8 @@ if (IC_URL.includes(window.location.hostname)) {
             (async () => {
                 try {
                     logger.info('开始轮询');
+                    // 存储当前时间
+                    await chrome.storage.local.set({ lastPollTime: new Date().toLocaleString() });
                     const hasLogin = window.location.href.includes('login.php')
                     if (hasLogin) {
                         logger.info('IC交易网处于未登录状态');
