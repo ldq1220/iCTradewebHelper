@@ -73,14 +73,14 @@ document.addEventListener('DOMContentLoaded', function () {
                 const user = result.user;
                 document.getElementById('loginForm').style.display = 'none';
                 document.querySelector('.status-card').style.display = 'block'; // 显示状态卡
-                document.querySelector('.info-section').style.display = 'block'; // 显示信息部分    
+                document.querySelector('.info-container').style.display = 'block'; // 显示信息部分    
                 document.getElementById('usernameDisplay').textContent = user.nickname; // 显示用户名
                 document.getElementById('logoutButton').style.display = 'block'; // 显示退出登录按钮
             });
         } else {
             document.getElementById('loginForm').style.display = 'block';
             document.querySelector('.status-card').style.display = 'none'; // 隐藏状态卡
-            document.querySelector('.info-section').style.display = 'none'; // 隐藏信息部分
+            document.querySelector('.info-container').style.display = 'none'; // 隐藏信息部分
             document.getElementById('usernameDisplay').textContent = ''; // 隐藏用户名
             document.getElementById('logoutButton').style.display = 'none'; // 隐藏退出登录按钮
         }

@@ -88,8 +88,8 @@ if (IC_URL.includes(window.location.hostname)) {
 
         await chrome.storage.local.get(['executeGetSuppliersProcess'], async (result) => {
             if (result.executeGetSuppliersProcess) {
-                const inquiryRecordResult = await ICCRMAPI.getInquiryRecord(query.inquiryRecordId) // 获取 询料记录
-                const { inquiry_supplier_number, purchase_bot_id } = await ICCRMAPI.getSystemConfig() // 获取系统配置
+                const { inquiry_status } = await ICCRMAPI.getInquiryRecord(query.inquiryRecordId) // 获取 询料记录
+                const { inquiry_supplier_number, purchase_bot_id, purchase_bot_im_platform } = await ICCRMAPI.getSystemConfig() // 获取系统配置
                 const suppliersResult = await getSuppliersProcess(inquiry_supplier_number); // 获取供应商信息
                 logger.info('获取供应商信息执行任务结果:', suppliersResult);
                 chrome.storage.local.remove('executeGetSuppliersProcess');  // 执行后清除状态
@@ -98,9 +98,9 @@ if (IC_URL.includes(window.location.hostname)) {
                 const { success, data, error } = suppliersResult;
                 if (!success || !data.length) {
                     ICCRMAPI.updateInquiryMaterial(query.inquiryMaterialId, { inquiry_material_status: "1", gather_error: error },); // 更新询料物料状态为 采集失败
-                    if (inquiryRecordResult.inquiry_status == "0") await ICCRMAPI.updateInquiryRecord(query.inquiryRecordId, { inquiry_status: "-1", gather_error: error }) // 更新询料任务状态为 采集失败
+                    if (inquiry_status == "0") await ICCRMAPI.updateInquiryRecord(query.inquiryRecordId, { inquiry_status: "-1", gather_error: error }) // 更新询料任务状态为 采集失败
                 } else {
-                    await handleSupplierData(data, purchase_bot_id) // 处理供应商数据
+                    await handleSupplierData(data, purchase_bot_id, purchase_bot_im_platform) // 处理供应商数据
                     await ICCRMAPI.updateInquiryMaterial(query.inquiryMaterialId, { inquiry_material_status: "2" },); // 更新询料物料状态为 待询价
                     await ICCRMAPI.updateInquiryRecord(query.inquiryRecordId, { inquiry_status: "1" }) // 更新询料任务状态为 待询价
                 }
@@ -108,7 +108,7 @@ if (IC_URL.includes(window.location.hostname)) {
         });
 
         // 处理 供应商数据
-        async function handleSupplierData(data, purchase_bot_id) {
+        async function handleSupplierData(data, purchase_bot_id, purchase_bot_im_platform) {
             const { user } = await new Promise(resolve => {
                 chrome.storage.local.get(['user'], resolve);
             });
@@ -172,7 +172,7 @@ if (IC_URL.includes(window.location.hostname)) {
                     supplier_name: companyName, // 所属供应商
                     imUserId: qqAccount.length > 0 ? qqAccount[0] : '', // 联系人qq
                     imBotUserId: purchase_bot_id, // 机器人ID
-                    imPlatform: 'qq', // 平台
+                    imPlatform: purchase_bot_im_platform, // 平台
                     imIsGroup: '好友'
                 }
                 await handleSuppliercontact(supplierContactInfo)
