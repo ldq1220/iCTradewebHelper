@@ -134,14 +134,19 @@ if (IC_URL.includes(window.location.hostname)) {
 
                 if (supplierResult) {
                     // 更新供应商信息
-                    const { company_ids, inquiry_material, brands: supplierBrands } = supplierResult;
-                    if (!company_ids.includes(userCompanyId)) company_ids.push(userCompanyId) // 关联公司ids
+                    const { company_ids, inquiry_material, brands: supplierBrands, companys, id: supplierId } = supplierResult;
+                    if (!company_ids.includes(userCompanyId)) {
+                        company_ids.push(userCompanyId)
+                        companys.push({ id: Number(userCompanyId) })
+                    } // 关联公司
 
                     const inquiryMaterialIds = inquiry_material.map(item => item.id)
                     if (!inquiryMaterialIds.includes(query.inquiryMaterialId)) inquiryMaterialIds.push(query.inquiryMaterialId) // 关联询料物料ids
 
-                    await ICCRMAPI.updateSupplierInfo(companyName, {
+                    await ICCRMAPI.updateSupplierInfo(supplierId, {
                         company_ids,
+                        companys,
+                        id: supplierId,
                         inquiry_material: inquiryMaterialIds.map(item => { return { id: item } }),
                         brands: brands.length > 0 ? brands.map(item => {
                             const existingBrand = supplierBrands?.find(b => b.brand_name === item.name); // 查找相同名称的已有品牌
@@ -157,6 +162,7 @@ if (IC_URL.includes(window.location.hostname)) {
                     // 创建供应商信息
                     await ICCRMAPI.createSupplierInfo({
                         company_ids: [userCompanyId],
+                        companys: [{ id: Number(userCompanyId) }],
                         inquiry_material: [{ id: query.inquiryMaterialId }],
                         brands: brands.length > 0 ? brands.map(item => ({
                             proportion: item.percentage,

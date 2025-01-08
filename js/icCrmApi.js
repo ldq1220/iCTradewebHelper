@@ -121,9 +121,9 @@ window.ICCRMAPI = {
     },
 
     // 更新供应商信息
-    async updateSupplierInfo(companyName, data) {
-        return this.request(`/suppliers:update?filter[company_name]=${companyName}`, {
-            method: 'PUT',
+    async updateSupplierInfo(supplierId, data) {
+        return this.request(`/suppliers:update?filterByTk=${supplierId}`, {
+            method: 'POST',
             body: data
         });
     },
