@@ -274,5 +274,3 @@ window.getSuppliersProcess = function (inquiry_supplier_number = 10, batchSize =
         }
     });
 };
-
-

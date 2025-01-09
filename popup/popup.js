@@ -4,6 +4,88 @@ async function updateLastRunTime() {
     lastRunTimeElement.textContent = result.lastPollTime || '-';
 }
 
+// 验证和显示错误信息
+function validateInputs() {
+    const companyIds = document.getElementById('companyIds').value.trim();
+    const token = document.getElementById('token').value.trim();
+    const limit = document.getElementById('limit').value.trim();
+    const idsError = document.getElementById('idsError');
+    const tokenError = document.getElementById('tokenError');
+    const limitError = document.getElementById('limitError');
+    let isValid = true;
+
+    // 验证token
+    if (!token) {
+        tokenError.textContent = 'Token不能为空';
+        isValid = false;
+    } else {
+        tokenError.textContent = '';
+    }
+
+    // 验证公司IDs
+    if (!companyIds) {
+        idsError.textContent = '公司Ids不能为空';
+        isValid = false;
+    } else {
+        try {
+            const ids = JSON.parse(companyIds);
+            if (!Array.isArray(ids)) {
+                idsError.textContent = '请输入正确的数组格式';
+                isValid = false;
+            } else if (ids.length === 0) {
+                idsError.textContent = '数组不能为空';
+                isValid = false;
+            } else {
+                idsError.textContent = '';
+            }
+        } catch (e) {
+            idsError.textContent = '请输入正确的数组格式';
+            isValid = false;
+        }
+    }
+
+    // 验证limit
+    if (!limit) {
+        limitError.textContent = '数量不能为空';
+        isValid = false;
+    } else {
+        limitError.textContent = '';
+    }
+
+    return isValid;
+}
+
+// 保存配置到storage
+async function saveConfig() {
+    const companyIds = document.getElementById('companyIds').value.trim();
+    const token = document.getElementById('token').value.trim();
+    const limit = document.getElementById('limit').value.trim();
+    try {
+        // 尝试解析公司IDs
+        const ids = JSON.parse(companyIds);
+        if (!Array.isArray(ids)) {
+            return false;
+        }
+        // 保存配置
+        await chrome.storage.local.set({
+            companyIds: ids,
+            iccrmToken: token,
+            limit: limit
+        });
+        return true;
+    } catch (e) {
+        console.error('保存配置失败:', e);
+        return false;
+    }
+}
+
+// 处理输入框值变化
+async function handleInputChange() {
+    if (validateInputs()) {
+        await saveConfig();
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function () {
     // 更新上次运行时间
     updateLastRunTime();
@@ -19,90 +101,62 @@ document.addEventListener('DOMContentLoaded', function () {
     const statusToggle = document.getElementById('statusToggle');
     const statusIcon = document.querySelector('.status-icon');
     const statusText = document.querySelector('.status-text');
+    const companyIdsInput = document.getElementById('companyIds');
+    const tokenInput = document.getElementById('token');
+    const limitInput = document.getElementById('limit');
 
-    /************************ 登录状态 ************************/
-    // 检查登录状态
-    chrome.storage.local.get(['token'], function (result) {
-        result.token ? viewHasLoginUi(true) : viewHasLoginUi(false);
-    });
-
-    // 登录按钮事件
-    document.getElementById('loginButton').addEventListener('click', function () {
-        const userAccount = document.getElementById('userAccount').value;
-        const password = document.getElementById('password').value;
-
-        // 调用登录接口
-        fetch('https://ic.we5.fun/api/auth:signIn', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ account: userAccount, password })
-        })
-            .then(response => response.json())
-            .then(async ({ data: { token, user } }) => {
-                console.log('登录成功', token, user);
-                if (token) {
-                    // 存储token和用户信息
-                    await chrome.storage.local.set({ token, user });
-                    viewHasLoginUi(true);
-                }
-            })
-            .catch(error => {
-                console.error('登录错误:', error);
-                alert('登录失败，请检查用户名和密码');
-            });
-    });
-
-    // 退出登录按钮事件
-    document.getElementById('logoutButton').addEventListener('click', async function () {
-        // 清除token和用户信息
-        await chrome.storage.local.remove(['token', 'user']);
-        // 更新UI
-        viewHasLoginUi(false);
-
-        statusToggle.checked = false; // 设置开关为关闭
-        chrome.storage.local.set({ isEnabled: false }); // 更新存储状态
-        updateStatus(false); // 更新UI状态
-    });
-
-    // 显示登录状态UI
-    function viewHasLoginUi(hasLogin) {
-        if (hasLogin) {
-            chrome.storage.local.get(['user'], function (result) {
-                const user = result.user;
-                document.getElementById('loginForm').style.display = 'none';
-                document.querySelector('.status-card').style.display = 'block'; // 显示状态卡
-                document.querySelector('.info-container').style.display = 'block'; // 显示信息部分    
-                document.getElementById('usernameDisplay').textContent = user.nickname; // 显示用户名
-                document.getElementById('logoutButton').style.display = 'block'; // 显示退出登录按钮
-            });
+    // 从storage加载保存的值
+    chrome.storage.local.get(['companyIds', 'iccrmToken', 'limit'], function (result) {
+        console.log('companyIds', result.companyIds, 'iccrmToken', result.iccrmToken, 'limit', result.limit)
+        if (result.companyIds) companyIdsInput.value = JSON.stringify(result.companyIds);
+        if (result.iccrmToken) tokenInput.value = result.iccrmToken;
+        if (result.limit) {
+            limitInput.value = result.limit
         } else {
-            document.getElementById('loginForm').style.display = 'block';
-            document.querySelector('.status-card').style.display = 'none'; // 隐藏状态卡
-            document.querySelector('.info-container').style.display = 'none'; // 隐藏信息部分
-            document.getElementById('usernameDisplay').textContent = ''; // 隐藏用户名
-            document.getElementById('logoutButton').style.display = 'none'; // 隐藏退出登录按钮
-        }
-    }
+            limitInput.value = 5
+            chrome.storage.local.set({ limit: 5 })
+        };
+    });
+
+    // 监听输入框值变化
+    companyIdsInput.addEventListener('change', handleInputChange);
+    tokenInput.addEventListener('change', handleInputChange);
+    limitInput.addEventListener('change', handleInputChange);
 
     /********************** 插件状态开关 *********************/
     // 从 storage 获取当前状态并初始化
-    chrome.storage.local.get(['isEnabled'], function (result) {
+    chrome.storage.local.get(['isEnabled'], async function (result) {
+        console.log('isEnabled', result.isEnabled)
         const isEnabled = result.isEnabled !== false; // 默认为true
+
+        // 如果是启用状态
+        if (isEnabled) {
+            statusToggle.checked = false;
+            updateStatus(false);
+            return;
+        }
+
+        // 设置开关状态和UI
         statusToggle.checked = isEnabled;
         updateStatus(isEnabled);
 
-        // 初始化时也发送状态到background
+        // 发送状态到background
         chrome.runtime.sendMessage({
             action: 'toggleStatus',
-            isEnabled: isEnabled
+            isEnabled: isEnabled,
         });
     });
 
     // 监听开关变化
-    statusToggle.addEventListener('change', function () {
+    statusToggle.addEventListener('change', async function () {
         const isEnabled = this.checked;
+
+        // 开启时验证输入
+        if (isEnabled && !validateInputs()) {
+            this.checked = false;
+            return;
+        }
+
         console.log('开关状态改变:', isEnabled); // 调试日志
 
         // 保存状态
@@ -114,7 +168,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // 发送消息到background
         chrome.runtime.sendMessage({
             action: 'toggleStatus',
-            isEnabled: isEnabled
+            isEnabled: isEnabled,
         }, response => {
             console.log('background响应:', response); // 调试日志
         });
@@ -127,29 +181,22 @@ document.addEventListener('DOMContentLoaded', function () {
             statusText.classList.add('active');
             statusText.classList.remove('inactive');
             statusText.textContent = '正在运行';
+            // 禁用输入框
+            companyIdsInput.disabled = true;
+            tokenInput.disabled = true;
+            limitInput.disabled = true;
         } else {
             statusIcon.classList.remove('active');
             statusIcon.classList.add('inactive');
             statusText.classList.remove('active');
             statusText.classList.add('inactive');
             statusText.textContent = '已停止';
+            // 启用输入框
+            companyIdsInput.disabled = false;
+            tokenInput.disabled = false;
+            limitInput.disabled = false;
         }
     }
-
-    /********************** 监听token user存储变化  退出登录 */
-    chrome.storage.onChanged.addListener(function (changes, namespace) {
-        // 只关注本地存储的变化
-        if (namespace === 'local') {
-            // 如果token或user发生了变化
-            if (changes.token || changes.user) {
-                // 检查token是否被删除了
-                if (!changes.token?.newValue || !changes.user?.newValue) {
-                    viewHasLoginUi(false); // 更新UI为未登录状态
-                    statusToggle.checked = false; // 关闭状态开关
-                    updateStatus(false); // 更新状态显示
-                }
-            }
-        }
-    });
 });
+
 

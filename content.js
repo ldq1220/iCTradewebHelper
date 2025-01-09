@@ -68,15 +68,26 @@ if (IC_URL.includes(window.location.hostname)) {
         try {
             // 先清除上一次的状态
             await chrome.storage.local.remove('executeGetSuppliersProcess');
+            const { companyIds } = await chrome.storage.local.get(['companyIds']);
 
-            const inquiryMaterialResult = await ICCRMAPI.getInquiryMaterialByStatus() // 获取待采集状态的询料任务
-            if (!inquiryMaterialResult || !inquiryMaterialResult?.material_code) return logger.info('当前询料物料没有标准物料。')
-            const { inquiry_record_id, id, material_code } = inquiryMaterialResult
+            const { limit } = await chrome.storage.local.get(['limit']);
+            const inquiryMaterialResult = await ICCRMAPI.getInquiryMaterialByStatus("0", limit) // 获取待采集状态的询料任务
+            const inquiryMaterialResultCompanyIds = inquiryMaterialResult.map(item => item.inquiry_record.company_id)
+            const hasInclude = companyIds.some(item => inquiryMaterialResultCompanyIds.includes(item))
+            if (!hasInclude) return logger.info('获取到待采集物料中，没有插件负责的公司！！')
 
-            chrome.storage.local.set({ executeGetSuppliersProcess: true }); // 存储状态 等待跳转完成页面加载获取供应商数据
-
-            await sleep(2000) // 等待2秒
-            await UTILS.gotoSearchPage(inquiry_record_id, id, material_code) // 跳转至IC交易网对应物料编码的搜索页面
+            // 找出第一个满足条件的询料物料
+            for (let i = 0; i < inquiryMaterialResult.length; i++) {
+                const element = inquiryMaterialResult[i];
+                const hasInclude = companyIds.includes(element.inquiry_record.company_id)
+                if (!hasInclude) continue
+                console.log('查到有插件负责的公司', element)
+                const { inquiry_record_id, id, material_code } = element
+                chrome.storage.local.set({ executeGetSuppliersProcess: true }); // 存储状态 等待跳转完成页面加载获取供应商数据
+                await sleep(2000) // 等待2秒
+                await UTILS.gotoSearchPage(inquiry_record_id, id, material_code, element.inquiry_record.company_id) // 跳转至IC交易网对应物料编码的搜索页面
+                break
+            }
         } catch (error) {
             logger.error('处理询料任务时发生错误:', error);
         }
@@ -89,7 +100,7 @@ if (IC_URL.includes(window.location.hostname)) {
         await chrome.storage.local.get(['executeGetSuppliersProcess'], async (result) => {
             if (result.executeGetSuppliersProcess) {
                 const { inquiry_status } = await ICCRMAPI.getInquiryRecord(query.inquiryRecordId) // 获取 询料记录
-                const { inquiry_supplier_number, purchase_bot_id, purchase_bot_im_platform } = await ICCRMAPI.getSystemConfig() // 获取系统配置
+                const { inquiry_supplier_number, purchase_bot_id, purchase_bot_im_platform } = await ICCRMAPI.getSystemConfig(query.companyId) // 获取系统配置
                 const suppliersResult = await getSuppliersProcess(inquiry_supplier_number); // 获取供应商信息
                 logger.info('获取供应商信息执行任务结果:', suppliersResult);
                 chrome.storage.local.remove('executeGetSuppliersProcess');  // 执行后清除状态
@@ -100,7 +111,7 @@ if (IC_URL.includes(window.location.hostname)) {
                     ICCRMAPI.updateInquiryMaterial(query.inquiryMaterialId, { inquiry_material_status: "1", gather_error: error },); // 更新询料物料状态为 采集失败
                     if (inquiry_status == "0") await ICCRMAPI.updateInquiryRecord(query.inquiryRecordId, { inquiry_status: "-1", gather_error: error }) // 更新询料任务状态为 采集失败
                 } else {
-                    await handleSupplierData(data, purchase_bot_id, purchase_bot_im_platform) // 处理供应商数据
+                    await handleSupplierData(data, purchase_bot_id, purchase_bot_im_platform, query.companyId) // 处理供应商数据
                     await ICCRMAPI.updateInquiryMaterial(query.inquiryMaterialId, { inquiry_material_status: "2" },); // 更新询料物料状态为 待询价
                     await ICCRMAPI.updateInquiryRecord(query.inquiryRecordId, { inquiry_status: "1" }) // 更新询料任务状态为 待询价
                 }
@@ -108,16 +119,13 @@ if (IC_URL.includes(window.location.hostname)) {
         });
 
         // 处理 供应商数据
-        async function handleSupplierData(data, purchase_bot_id, purchase_bot_im_platform) {
-            const { user } = await new Promise(resolve => {
-                chrome.storage.local.get(['user'], resolve);
-            });
+        async function handleSupplierData(data, purchase_bot_id, purchase_bot_im_platform, companyId) {
 
             await Promise.all(data.map(async (item) => {
                 const { companyName, companyTag, qqAccount, companyInfo } = item;
                 const { memberYears, contacts, location, addresses, brands } = companyInfo;
                 const { phones, mobiles, faxes } = contacts;
-                const userCompanyId = user.company_id + "";
+                const userCompanyId = companyId + "";
                 const supplierResult = await ICCRMAPI.getSupplierInfo(companyName); // 获取IC CRM中 供应商信息
 
                 const supplierInfo = {
@@ -174,7 +182,7 @@ if (IC_URL.includes(window.location.hostname)) {
 
                 // 处理供应商联系人
                 const supplierContactInfo = {
-                    company_id: user.company_id, // 所属公司
+                    company_id: companyId, // 所属公司
                     supplier_name: companyName, // 所属供应商
                     imUserId: qqAccount.length > 0 ? qqAccount[0] : '', // 联系人qq
                     imBotUserId: purchase_bot_id, // 机器人ID

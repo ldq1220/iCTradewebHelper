@@ -13,19 +13,28 @@
                 <img src="../icons/icon48.png" alt="logo" class="logo">
                 <h1>IC Helper</h1>
             </div>
-            <div class="user">
-                <span id="usernameDisplay"></span> <!-- 用户名显示 -->
-                <button id="logoutButton" class="custom-button">退出登录</button>
-            </div>
         </header>
 
         <div class="content" id="content">
-            <!-- 登录表单 -->
-            <div id="loginForm" style="display: none;">
-                <input type="text" id="userAccount" placeholder="用户名/邮箱">
-                <input type="password" id="password" placeholder="密码">
-                <button id="loginButton" class="custom-button">登录</button>
+            <!-- 配置输入 -->
+            <div class="config-card">
+                <div class="input-group">
+                    <label for="companyIds">公司IDs:</label>
+                    <input type="text" id="companyIds" placeholder="请输入公司ID数组">
+                    <span class="error-text" id="idsError"></span>
+                </div>
+                <div class="input-group">
+                    <label for="token">Token:</label>
+                    <input type="password" id="token" placeholder="请输入token">
+                    <span class="error-text" id="tokenError"></span>
+                </div>
+                <div class="input-group">
+                    <label for="limit">Limit:</label>
+                    <input type="number" id="limit" placeholder="数量">
+                    <span class="error-text" id="limitError"></span>
+                </div>
             </div>
+
             <!-- 插件Container -->
             <div class="status-card">
                 <div class="status-card-flex">
@@ -61,6 +70,7 @@
                 </div>
             </div>
         </div>
+
         <footer class="footer">
             <span>版本 1.0.0</span>
         </footer>

@@ -42,9 +42,9 @@ chrome.runtime.onStartup.addListener(() => {
 // 监听 跳转至IC交易网搜索页面
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "gotoSearchPage") {
-        const { inquiry_record_id, inquiryMaterialId, searchValue } = request;
+        const { inquiry_record_id, inquiryMaterialId, searchValue, companyId } = request;
         chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-            const url = `https://www.ic.net.cn/search/${searchValue.trim()}.html?page=1&inquiryRecordId=${inquiry_record_id}&inquiryMaterialId=${inquiryMaterialId}`;
+            const url = `https://www.ic.net.cn/search/${searchValue.trim()}.html?page=1&inquiryRecordId=${inquiry_record_id}&inquiryMaterialId=${inquiryMaterialId}&companyId=${companyId}`;
             chrome.tabs.update(tabs[0].id, { url: url });
         });
     }

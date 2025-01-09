@@ -5,8 +5,8 @@ window.ICCRMAPI = {
         const icCrmBaseUrl = 'https://ic.we5.fun/api'; // 将 base URL 封装在这里
 
         // 从 chrome.storage 中获取 token
-        const result = await chrome.storage.local.get(['token']);
-        const token = result.token;
+        const result = await chrome.storage.local.get(['iccrmToken']);
+        const token = result.iccrmToken;
 
         const defaultOptions = {
             method: 'POST',
@@ -47,6 +47,7 @@ window.ICCRMAPI = {
                 if (response.status == 403) {
                     await chrome.storage.local.remove(['token', 'user']);  // 清除登录信息
                     chrome.runtime.sendMessage({ action: 'loginExpired' });  // 通知background脚本登录已过期
+                    alert('IC助手Token错误，No permission')
                     throw new Error(`IC助手，登录态过期。请重新登录。HTTP status: ${response.status}`);
                 }
                 throw new Error(`IC助手，HTTP error! status: ${response.status}`);
@@ -62,8 +63,8 @@ window.ICCRMAPI = {
 
     /*********************** API 方法 ***********************/
     // 获取系统配置
-    async getSystemConfig() {
-        return this.request(`/parameter_config:get`, {
+    async getSystemConfig(companyId) {
+        return this.request(`/parameter_config:get?filter[f_company_id]=${companyId}`, {
             method: 'GET'
         });
     },
@@ -84,8 +85,8 @@ window.ICCRMAPI = {
     },
 
     // 获取一条 待采集状态的 询料物料
-    async getInquiryMaterialByStatus() {
-        return this.request(`/inquiry_materials:get?filter={"inquiry_material_status": "0"}`, {
+    async getInquiryMaterialByStatus(status, limit) {
+        return this.request(`/inquiry_materials:list?filter={"inquiry_material_status": "${status}"}&page=1&limit=${limit}&appends=inquiry_record`, {
             method: 'GET'
         });
     },
