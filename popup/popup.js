@@ -130,7 +130,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const isEnabled = result.isEnabled !== false; // 默认为true
 
         // 如果是启用状态
-        if (isEnabled) {
+        if (isEnabled && !validateInputs()) {
             statusToggle.checked = false;
             updateStatus(false);
             return;
