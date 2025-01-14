@@ -179,7 +179,7 @@ window.getSuppliersProcess = function () {
                         batchId: null,
                         totalNumber: null,
                         packaging: null,
-                        storageLocation: null,
+                        storehouse: null,
                         desc: null,
                         qqAccount: []
                     };
@@ -260,7 +260,7 @@ window.getSuppliersProcess = function () {
                         const kwElement = kwPlaceElement.querySelector(".kw_list");
                         if (kwElement) {
                             const kwText = kwElement.textContent.trim();
-                            if (kwText) elementData.storageLocation = kwText;
+                            if (kwText) elementData.storehouse = kwText;
                         }
                     }
 
