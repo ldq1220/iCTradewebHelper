@@ -9,17 +9,9 @@ const Poll = {
     async pollHandler() {
         try {
             // 检查当前是否在目标网站
-            // const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-            // const currentTab = tabs[0];
-            // console.log('tabs-----', tabs);
-            // // && currentTab.url.includes('www.ic.net.cn')
-            // if (currentTab) {
-            //     await chrome.tabs.sendMessage(currentTab.id, {
-            //         action: 'startPoll'
-            //     });
-            // }
             const tabs = await chrome.tabs.query({
-                url: "*://*.ic.net.cn/*"  // 匹配目标网站的所有标签页
+                url: "*://*.ic.net.cn/*"  // 匹配【交易网】所有标签页
+                // url: "*://*.hqew.com/*"  // 匹配【华强网】所有标签页
             });
             console.log('tabs-----', tabs);
             if (tabs.length) {

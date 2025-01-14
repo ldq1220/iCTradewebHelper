@@ -49,6 +49,10 @@ if (IC_URL.includes(window.location.hostname)) {
                         sendResponse({ success: false, error: '未登录状态' });
                         return;
                     }
+                    // 通知background.js 先清空数据
+                    if (window.location.hostname.includes('ic.net.cn')) {
+                        chrome.runtime.sendMessage({ action: "clearGatherPlan" });
+                    }
 
                     await handleInquiryTask(); // 等待异步任务完成
                     sendResponse({ success: true });
@@ -103,27 +107,24 @@ if (IC_URL.includes(window.location.hostname)) {
 
         await chrome.storage.local.get(['executeGetSuppliersProcess'], async (result) => {
             if (result.executeGetSuppliersProcess) {
-                const { inquiry_supplier_number, purchase_bot_id, purchase_bot_im_platform } = await ICCRMAPI.getSystemConfig(query.companyId) // 获取系统配置
                 let suppliersResult = null
+
                 if (window.location.hostname.includes('ic.net.cn')) {
-                    suppliersResult = await getSuppliersProcess(inquiry_supplier_number); // 获取【交易网】供应商信息
+                    suppliersResult = await getSuppliersProcessByJyw(); // 获取【交易网】供应商信息
                 } else if (window.location.hostname.includes('hqew.com')) {
-                    suppliersResult = await getSuppliersProcessByHqw(inquiry_supplier_number); // 获取【华强网】供应商信息
+                    suppliersResult = await getSuppliersProcessByHqw(); // 获取【华强网】供应商信息
                 }
 
                 logger.info('获取供应商信息执行任务结果:', suppliersResult);
-                chrome.storage.local.remove('executeGetSuppliersProcess');  // 执行后清除状态
+                await chrome.storage.local.remove('executeGetSuppliersProcess');  // 执行后清除状态
 
                 const suppliersGatherOverData = {
-                    purchase_bot_id,
-                    purchase_bot_im_platform,
                     suppliersResult,
                     companyId: query.companyId,
                     inquiryRecordId: query.inquiryRecordId,
                     inquiryMaterialId: query.inquiryMaterialId,
                     inquiryMaterialCode: query.inquiryMaterialCode,
                     source: window.location.hostname,
-                    url: window.location.href
                 }
                 console.log('供应商采集结束发送消息通道 suppliersGatherOverData', suppliersGatherOverData);
                 chrome.runtime.sendMessage({ action: "suppliersGatherOver", suppliersGatherOverData });

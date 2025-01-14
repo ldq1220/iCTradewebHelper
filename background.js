@@ -30,6 +30,29 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+// 供应商去重
+function deWeightSuppliers(suppliers) {
+    const seenCompanies = new Set();
+    let storage = suppliers
+        .filter(item => item.companyName.length > 0 && item.qqAccount.length > 0)
+        .filter(item => {
+            // 获取第一个公司名作为唯一标识
+            const companyName = item.companyName;
+            // 如果这个公司名已经出现过，返回false过滤掉
+            if (seenCompanies.has(companyName)) {
+                return false;
+            }
+            // 否则添加到Set中并保留这条数据
+            seenCompanies.add(companyName);
+
+            // 删除item中的company和visibleLinks属性
+            delete item.company;
+            delete item.visibleLinks;
+            return true;
+        });
+    return storage;
+}
+
 
 // 监听来自popup的消息
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -52,7 +75,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 // 插件安装时初始化
 chrome.runtime.onInstalled.addListener(() => {
     chrome.storage.local.get(['isEnabled'], function (result) {
-        const isEnabled = result.isEnabled !== false;
+        const isEnabled = result.isEnabled !== false && result.isEnabled !== undefined;
         if (isEnabled) {
             Poll.startPolling();
         }
@@ -62,7 +85,7 @@ chrome.runtime.onInstalled.addListener(() => {
 // 浏览器启动时初始化
 chrome.runtime.onStartup.addListener(() => {
     chrome.storage.local.get(['isEnabled'], function (result) {
-        const isEnabled = result.isEnabled !== false;
+        const isEnabled = result.isEnabled !== false && result.isEnabled !== undefined;
         if (isEnabled) {
             Poll.startPolling();
         }
@@ -86,22 +109,32 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
     sendResponse({ success: true });
 });
 
+// 清空数据
+chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
+    if (request.action === "clearGatherPlan") {
+        Object.assign(gatherPlan, {
+            jyw: false,
+            jywSuppliers: [],
+            hqw: false,
+            hqwSuppliers: [],
+        })
+        console.log('IC交易网一次轮询开始时：清空数据-----------', gatherPlan);
+        sendResponse({ success: true });
+    }
+});
+
 // 供应商采集结束
 chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
     if (request.action === "suppliersGatherOver") {
         const {
-            purchase_bot_id,
-            purchase_bot_im_platform,
             suppliersResult,
             companyId,
             inquiryRecordId,
             inquiryMaterialId,
             inquiryMaterialCode,
             source,
-            url,
         } = request.suppliersGatherOverData;
         const { success, data, error } = suppliersResult;
-        const { inquiry_status } = await ICCRMAPI.getInquiryRecord(inquiryRecordId) // 获取 询料记录
         const sourceName = sourceData.find(item => item.url === source)?.name;
 
         if (sourceName === 'jyw') {
@@ -143,7 +176,9 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
             await sleep(2000)
             await chrome.storage.local.set({ executeGetSuppliersProcess: true }); // 存储状态 等待跳转完成页面加载获取供应商数据
             await sleep(3000)
-
+            // 先清除状态,再关闭【华强网】标签页
+            await chrome.storage.local.remove('executeGetSuppliersProcess');
+            console.log('华强网标签页关闭完成', await chrome.storage.local.get('executeGetSuppliersProcess'));
             const hqwTabs = await chrome.tabs.query({
                 url: "*://*.hqew.com/*"  // 匹配目标网站的所有标签页
             });
@@ -153,7 +188,17 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
         }
 
         if (gatherPlan.hqw && gatherPlan.jyw) {
-            console.log('交易网和华强网的数据全部采集完成！！！！！！！！');
+            console.log('交易网和华强网的数据全部采集完成！！！！！！！！', '\n 总数据: ', [...gatherPlan.jywSuppliers, ...gatherPlan.hqwSuppliers], '\n 去重后数据: ', deWeightSuppliers([...gatherPlan.jywSuppliers, ...gatherPlan.hqwSuppliers]));
+
+            const totalSuppliers = deWeightSuppliers([...gatherPlan.jywSuppliers, ...gatherPlan.hqwSuppliers]);
+            const body = {
+                companyId: companyId,
+                inquiryMaterialId: inquiryMaterialId,
+                inquiryRecordId: inquiryRecordId,
+                suppliers: totalSuppliers
+            }
+            await ICCRMAPI.createTempData({ company_id: companyId, kind: 'suppliers', json_data: JSON.stringify(body) })
+
             Object.assign(gatherPlan, {
                 jyw: false,
                 jywSuppliers: [],

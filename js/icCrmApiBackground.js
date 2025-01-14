@@ -142,5 +142,17 @@ const ICCRMAPI = {
             method: 'POST',
             body: data
         });
+    },
+
+    // 创建临时数据
+    async createTempData({ company_id, kind, json_data }) {
+        return this.request('/temp_data:create', {
+            method: 'POST',
+            body: {
+                company_id,
+                kind,
+                json_data,
+            },
+        })
     }
 };

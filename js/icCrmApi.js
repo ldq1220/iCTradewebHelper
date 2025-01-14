@@ -142,6 +142,18 @@ window.ICCRMAPI = {
             method: 'POST',
             body: data
         });
+    },
+
+    // 创建临时数据
+    async createTempData({ companyId, kind, json_data }) {
+        return this.request('/temp_data:create', {
+            method: 'POST',
+            body: {
+                companyId,
+                kind,
+                json_data,
+            },
+        })
     }
 };
 

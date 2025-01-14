@@ -116,7 +116,7 @@ function sortSuppliersByTagPriority(supplierStore) {
 // 总结供应商信息 ==> 排序&过滤&去重&截取
 function summarizeSuppliers(supplierStore, inquiry_supplier_number) {
     // 先排序
-    sortSuppliersByTagPriority(supplierStore);
+    // sortSuppliersByTagPriority(supplierStore);
 
     // 过滤无效数据并去重
     const seenCompanies = new Set();
@@ -140,7 +140,11 @@ function summarizeSuppliers(supplierStore, inquiry_supplier_number) {
 }
 
 // 处理供应信息
-window.getSuppliersProcess = function (inquiry_supplier_number = 10, batchSize = 50) {
+window.getSuppliersProcessByJyw = function () {
+
+    const inquiry_supplier_number = 20;
+    const batchSize = 50;
+
     return new Promise((resolve) => {
         try {
             const supplierStore = [];
@@ -171,7 +175,14 @@ window.getSuppliersProcess = function (inquiry_supplier_number = 10, batchSize =
                         companyTag: [],
                         companyInfo: {},
                         materialId: [],
-                        qqAccount: []
+                        brand: null,
+                        batchId: null,
+                        totalNumber: null,
+                        packaging: null,
+                        storehouse: null,
+                        desc: null,
+                        qqAccount: [],
+                        source: 'jyw'
                     };
 
                     // 获取供应信息
@@ -209,6 +220,56 @@ window.getSuppliersProcess = function (inquiry_supplier_number = 10, batchSize =
                             const materialIdText = product.textContent.trim();
                             if (materialIdText) elementData.materialId.push(materialIdText);
                         });
+                    }
+
+                    // 获取厂商
+                    const brandElement = stairTr.querySelector("div.result_factory")
+                    if (brandElement) {
+                        const brandText = brandElement.textContent.trim();
+                        if (brandText) elementData.brand = brandText;
+                    }
+
+                    // 获取批号
+                    const resultBatchIdElement = stairTr.querySelector(".result_batchNumber");
+                    if (resultBatchIdElement) {
+                        const batchIdText = resultBatchIdElement.textContent.trim();
+                        if (batchIdText) elementData.batchId = batchIdText;
+                    }
+
+                    // 获取数量
+                    const totalNumberElements = stairTr.querySelectorAll(".result_totalNumber");
+                    if (totalNumberElements) {
+                        totalNumberElements.forEach((element) => {
+                            const display = !(getComputedStyle(element).display.includes('none'));
+                            if (display) {
+                                const totalNumberText = element.textContent.trim();
+                                if (totalNumberText) elementData.totalNumber = totalNumberText;
+                            }
+                        })
+                    }
+
+                    // 获取封装
+                    const packagingElement = stairTr.querySelector(".result_pakaging");
+                    if (packagingElement) {
+                        const packagingText = packagingElement.textContent.trim();
+                        if (packagingText) elementData.packaging = packagingText;
+                    }
+
+                    // 获取库位
+                    const kwPlaceElement = stairTr.querySelector(".result_kwplace");
+                    if (kwPlaceElement) {
+                        const kwElement = kwPlaceElement.querySelector(".kw_list");
+                        if (kwElement) {
+                            const kwText = kwElement.textContent.trim();
+                            if (kwText) elementData.storehouse = kwText;
+                        }
+                    }
+
+                    // 获取说明
+                    const explainElement = stairTr.querySelector(".result_explain");
+                    if (explainElement) {
+                        const explainText = explainElement.textContent.trim();
+                        if (explainText) elementData.desc = explainText;
                     }
 
                     // 获取询价信息中的QQ账号
