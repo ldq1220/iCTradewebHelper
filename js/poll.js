@@ -9,11 +9,21 @@ const Poll = {
     async pollHandler() {
         try {
             // 检查当前是否在目标网站
-            const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-            const currentTab = tabs[0];
-            if (currentTab && currentTab.url.includes('www.ic.net.cn')) {
-                // 向content script发送轮询消息
-                await chrome.tabs.sendMessage(currentTab.id, {
+            // const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+            // const currentTab = tabs[0];
+            // console.log('tabs-----', tabs);
+            // // && currentTab.url.includes('www.ic.net.cn')
+            // if (currentTab) {
+            //     await chrome.tabs.sendMessage(currentTab.id, {
+            //         action: 'startPoll'
+            //     });
+            // }
+            const tabs = await chrome.tabs.query({
+                url: "*://*.ic.net.cn/*"  // 匹配目标网站的所有标签页
+            });
+            console.log('tabs-----', tabs);
+            if (tabs.length) {
+                await chrome.tabs.sendMessage(tabs[0].id, {
                     action: 'startPoll'
                 });
             }

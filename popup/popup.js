@@ -127,7 +127,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // 从 storage 获取当前状态并初始化
     chrome.storage.local.get(['isEnabled'], async function (result) {
         console.log('isEnabled', result.isEnabled)
-        const isEnabled = result.isEnabled !== false; // 默认为true
+        const isEnabled = result.isEnabled !== false && result.isEnabled !== undefined; // 默认为true
 
         // 如果是启用状态
         if (isEnabled && !validateInputs()) {

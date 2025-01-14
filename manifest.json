@@ -18,7 +18,9 @@
         {
             "matches": [
                 "*://www.ic.net.cn/*",
-                "*://member.ic.net.cn/*"
+                "*://member.ic.net.cn/*",
+                "*://www.hqew.com/*",
+                "*://s.hqew.com/*"
             ],
             "js": [
                 "js/utils.js",
