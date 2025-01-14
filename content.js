@@ -111,9 +111,12 @@ if (IC_URL.includes(window.location.hostname)) {
                     ICCRMAPI.updateInquiryMaterial(query.inquiryMaterialId, { inquiry_material_status: "1", gather_error: error },); // 更新询料物料状态为 采集失败
                     if (inquiry_status == "0") await ICCRMAPI.updateInquiryRecord(query.inquiryRecordId, { inquiry_status: "-1", gather_error: error }) // 更新询料任务状态为 采集失败
                 } else {
-                    await handleSupplierData(data, purchase_bot_id, purchase_bot_im_platform, query.companyId) // 处理供应商数据
-                    await ICCRMAPI.updateInquiryMaterial(query.inquiryMaterialId, { inquiry_material_status: "2" },); // 更新询料物料状态为 待询价
-                    await ICCRMAPI.updateInquiryRecord(query.inquiryRecordId, { inquiry_status: "1" }) // 更新询料任务状态为 待询价
+                    // await handleSupplierData(data, purchase_bot_id, purchase_bot_im_platform, query.companyId) // 处理供应商数据
+                    // await ICCRMAPI.updateInquiryMaterial(query.inquiryMaterialId, { inquiry_material_status: "2" },); // 更新询料物料状态为 待询价
+                    // await ICCRMAPI.updateInquiryRecord(query.inquiryRecordId, { inquiry_status: "1" }) // 更新询料任务状态为 待询价
+
+                    await ICCRMAPI.createTempData({ companyId: query.companyId, kind: 'suppliers', json_data:  JSON.stringify(data)})
+                    
                 }
             }
         });

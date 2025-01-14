@@ -142,6 +142,17 @@ window.ICCRMAPI = {
             method: 'POST',
             body: data
         });
+    },
+
+    async createTempData({ companyId, kind, json_data}) {                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
+        return this.request('/temp_data:create', {
+            method: 'POST',
+            body: {
+                companyId,
+                kind,
+                json_data,
+            },
+        })
     }
 };
 
