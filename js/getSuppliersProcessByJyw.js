@@ -154,7 +154,7 @@ window.getSuppliersProcessByJyw = function () {
                 resolve({
                     success: false,
                     data: [],
-                    error: '当前物料编码，未找到供应商信息。'
+                    error: '当前物料编码，在【交易网】未找到供应商信息。'
                 });
                 return;
             }

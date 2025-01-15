@@ -10,8 +10,9 @@ const Poll = {
         try {
             // 检查当前是否在目标网站
             const tabs = await chrome.tabs.query({
-                url: "*://*.ic.net.cn/*"  // 匹配【交易网】所有标签页
+                // url: "*://*.ic.net.cn/*"  // 匹配【交易网】所有标签页
                 // url: "*://*.hqew.com/*"  // 匹配【华强网】所有标签页
+                url: "*://*.szlcsc.com/*"  // 匹配【立创商城】所有标签页
             });
             console.log('tabs-----', tabs);
             if (tabs.length) {

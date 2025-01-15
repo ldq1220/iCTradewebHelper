@@ -20,14 +20,16 @@
                 "*://www.ic.net.cn/*",
                 "*://member.ic.net.cn/*",
                 "*://www.hqew.com/*",
-                "*://s.hqew.com/*"
+                "*://s.hqew.com/*",
+                "*://*.szlcsc.com/*"
             ],
             "js": [
                 "js/utils.js",
-                "js/icCrmApi.js",
+                "js/icCrmApiBackground.js",
                 "js/poll.js",
                 "js/getSuppliersProcessByJyw.js",
                 "js/getSuppliersProcessByHqw.js",
+                "js/getSuppliersProcessByLcsc.js",
                 "content.js"
             ]
         }

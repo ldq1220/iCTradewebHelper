@@ -7,23 +7,21 @@ const gatherPlan = {
     jywSuppliers: [],
     hqw: false,
     hqwSuppliers: [],
+    lcsc: false,
+    lcscMaterialInfos: [],
 }
 const sourceData = [
     {
-        url: 'www.ic.net.cn',
+        url: 'ic.net.cn',
         name: 'jyw'
     },
     {
-        url: 'member.ic.net.cn',
-        name: 'jyw'
-    },
-    {
-        url: 'www.hqew.com',
+        url: 'hqew.com',
         name: 'hqw'
     },
     {
-        url: 's.hqew.com',
-        name: 'hqw'
+        url: 'szlcsc.com',
+        name: 'lcsc'
     }
 ]
 function sleep(ms) {
@@ -135,12 +133,12 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
             source,
         } = request.suppliersGatherOverData;
         const { success, data, error } = suppliersResult;
-        const sourceName = sourceData.find(item => item.url === source)?.name;
+        const sourceName = sourceData.find(item => source.includes(item.url))?.name;
 
         if (sourceName === 'jyw') {
             gatherPlan.jyw = true;
             gatherPlan.jywSuppliers = data;
-            console.log('交易网采集完成:', {
+            console.log('【交易网】采集完成:', {
                 success,
                 suppliersCount: data?.length,
                 error
@@ -148,7 +146,15 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
         } else if (sourceName === 'hqw') {
             gatherPlan.hqw = true;
             gatherPlan.hqwSuppliers = data;
-            console.log('华强网采集完成:', {
+            console.log('【华强网】采集完成:', {
+                success,
+                suppliersCount: data?.length,
+                error
+            });
+        } else if (sourceName === 'lcsc') {
+            gatherPlan.lcsc = true;
+            gatherPlan.lcscMaterialInfos = data;
+            console.log('【立创商城】采集完成:', {
                 success,
                 suppliersCount: data?.length,
                 error
@@ -157,7 +163,8 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
 
         console.log('gatherPlan', gatherPlan);
 
-        if (!gatherPlan.hqw) {
+        // 跳转【华强网】标签页
+        if (gatherPlan.jyw && !gatherPlan.hqw && !gatherPlan.lcsc) {
             console.log('跳转至【华强网】对应物料编码的搜索页面');
             await chrome.storage.local.remove('executeGetSuppliersProcess');
             await sleep(2000)
@@ -175,29 +182,55 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
             });
             await sleep(2000)
             await chrome.storage.local.set({ executeGetSuppliersProcess: true }); // 存储状态 等待跳转完成页面加载获取供应商数据
-            await sleep(3000)
+            await sleep(2000)
             // 先清除状态,再关闭【华强网】标签页
             await chrome.storage.local.remove('executeGetSuppliersProcess');
-            console.log('华强网标签页关闭完成', await chrome.storage.local.get('executeGetSuppliersProcess'));
+            console.log('【华强网】标签页关闭完成。');
             const hqwTabs = await chrome.tabs.query({
                 url: "*://*.hqew.com/*"  // 匹配目标网站的所有标签页
             });
-            if (hqwTabs.length) {
-                await chrome.tabs.remove(hqwTabs[0].id);
-            }
+            if (hqwTabs.length) await chrome.tabs.remove(hqwTabs[0].id);
+
+            // 跳转【立创商城】标签页
+            await chrome.storage.local.remove('executeGetSuppliersProcess');
+            await sleep(2000)
+            const urlLcsc = `https://so.szlcsc.com/global.html?k=${inquiryMaterialCode.trim()}&inquiryRecordId=${inquiryRecordId}&inquiryMaterialId=${inquiryMaterialId}&inquiryMaterialCode=${inquiryMaterialCode}&companyId=${companyId}`
+
+            const newTabLcsc = await chrome.tabs.create({ url: urlLcsc });
+            // 等待新页面加载完成
+            await new Promise(resolve => {
+                chrome.tabs.onUpdated.addListener(function listener(tabId, info) {
+                    if (tabId === newTabLcsc.id && info.status === 'complete') {
+                        chrome.tabs.onUpdated.removeListener(listener);
+                        resolve();
+                    }
+                });
+            });
+            await sleep(2000)
+            await chrome.storage.local.set({ executeGetSuppliersProcess: true }); // 存储状态 等待跳转完成页面加载获取供应商数据
+            await sleep(2000)
+            // 先清除状态,再关闭【立创商城】标签页
+            await chrome.storage.local.remove('executeGetSuppliersProcess');
+            console.log('【立创商城】标签页关闭完成。');
+            const lcscTabs = await chrome.tabs.query({
+                url: "*://*.szlcsc.com/*"  // 匹配目标网站的所有标签页
+            });
+            if (lcscTabs.length) await chrome.tabs.remove(lcscTabs[0].id);
         }
 
-        if (gatherPlan.hqw && gatherPlan.jyw) {
-            console.log('交易网和华强网的数据全部采集完成！！！！！！！！', '\n 总数据: ', [...gatherPlan.jywSuppliers, ...gatherPlan.hqwSuppliers], '\n 去重后数据: ', deWeightSuppliers([...gatherPlan.jywSuppliers, ...gatherPlan.hqwSuppliers]));
+        if (gatherPlan.hqw && gatherPlan.jyw && gatherPlan.lcsc) {
+            const totalSuppliers = [...gatherPlan.jywSuppliers, ...gatherPlan.hqwSuppliers];
+            const deWeightTotalSuppliers = deWeightSuppliers(totalSuppliers);
 
-            const totalSuppliers = deWeightSuppliers([...gatherPlan.jywSuppliers, ...gatherPlan.hqwSuppliers]);
+            console.log('交易网、华强网、立创商城的数据全部采集完成！！！！！！！！', '\n 总数据: ', totalSuppliers, '\n 去重后数据: ', deWeightTotalSuppliers, '\n【立创商城】', gatherPlan.lcscMaterialInfos);
+
             const body = {
                 companyId: companyId,
                 inquiryMaterialId: inquiryMaterialId,
                 inquiryRecordId: inquiryRecordId,
-                suppliers: totalSuppliers
+                suppliers: deWeightTotalSuppliers
             }
-            await ICCRMAPI.createTempData({ company_id: companyId, kind: 'suppliers', json_data: JSON.stringify(body) })
+            // await ICCRMAPI.createTempData({ company_id: companyId, kind: 'suppliers', json_data: JSON.stringify(body) })
 
             Object.assign(gatherPlan, {
                 jyw: false,
@@ -208,98 +241,6 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
             console.log('清空数据-----------', gatherPlan);
         }
 
-
-        // if (!success || !data.length) {
-        //     ICCRMAPI.updateInquiryMaterial(inquiryMaterialId, { inquiry_material_status: "1", gather_error: error },); // 更新询料物料状态为 采集失败
-        //     if (inquiry_status == "0") await ICCRMAPI.updateInquiryRecord(inquiryRecordId, { inquiry_status: "-1", gather_error: error }) // 更新询料任务状态为 采集失败
-        // } else {
-        //     await handleSupplierData(data, purchase_bot_id, purchase_bot_im_platform, companyId) // 处理供应商数据
-        //     await ICCRMAPI.updateInquiryMaterial(inquiryMaterialId, { inquiry_material_status: "2" },); // 更新询料物料状态为 待询价
-        //     await ICCRMAPI.updateInquiryRecord(inquiryRecordId, { inquiry_status: "1" }) // 更新询料任务状态为 待询价
-        // }
-
-        // // 处理 供应商数据
-        // async function handleSupplierData(data, purchase_bot_id, purchase_bot_im_platform, companyId) {
-        //     await Promise.all(data.map(async (item) => {
-        //         const { companyName, companyTag, qqAccount, companyInfo } = item;
-        //         const { memberYears, contacts, location, addresses, brands } = companyInfo;
-        //         const { phones, mobiles, faxes } = contacts;
-        //         const userCompanyId = companyId + "";
-        //         const supplierResult = await ICCRMAPI.getSupplierInfo(companyName); // 获取IC CRM中 供应商信息
-
-        //         const supplierInfo = {
-        //             company_name: companyName,
-        //             company_tag: companyTag,
-        //             qq_account: qqAccount,
-        //             member_years: memberYears,
-        //             phones: phones,
-        //             mobiles: mobiles.join(' '),
-        //             faxes: faxes.join(' '),
-        //             location,
-        //             addresses: addresses.join(' '),
-        //         }
-
-        //         if (supplierResult) {
-        //             // 更新供应商信息
-        //             const { company_ids, inquiry_material, brands: supplierBrands, companys, id: supplierId } = supplierResult;
-        //             if (!company_ids.includes(userCompanyId)) {
-        //                 company_ids.push(userCompanyId)
-        //                 companys.push({ id: Number(userCompanyId) })
-        //             } // 关联公司
-
-        //             const inquiryMaterialIds = inquiry_material.map(item => item.id)
-        //             if (!inquiryMaterialIds.includes(inquiryMaterialId)) inquiryMaterialIds.push(inquiryMaterialId) // 关联询料物料ids
-
-        //             await ICCRMAPI.updateSupplierInfo(supplierId, {
-        //                 company_ids,
-        //                 companys,
-        //                 id: supplierId,
-        //                 inquiry_material: inquiryMaterialIds.map(item => { return { id: item } }),
-        //                 brands: brands.length > 0 ? brands.map(item => {
-        //                     const existingBrand = supplierBrands?.find(b => b.brand_name === item.name); // 查找相同名称的已有品牌
-        //                     return {
-        //                         id: existingBrand?.id, // 保留已有品牌的id
-        //                         proportion: item.percentage,
-        //                         brand_name: item.name,
-        //                     }
-        //                 }) : [],
-        //                 ...supplierInfo
-        //             })
-        //         } else {
-        //             // 创建供应商信息
-        //             await ICCRMAPI.createSupplierInfo({
-        //                 company_ids: [userCompanyId],
-        //                 companys: [{ id: Number(userCompanyId) }],
-        //                 inquiry_material: [{ id: inquiryMaterialId }],
-        //                 brands: brands.length > 0 ? brands.map(item => ({
-        //                     proportion: item.percentage,
-        //                     brand_name: item.name,
-        //                 })) : [],
-        //                 ...supplierInfo
-        //             })
-        //         }
-
-        //         // 处理供应商联系人
-        //         const supplierContactInfo = {
-        //             company_id: companyId, // 所属公司
-        //             supplier_name: companyName, // 所属供应商
-        //             imUserId: qqAccount.length > 0 ? qqAccount[0] : '', // 联系人qq
-        //             imBotUserId: purchase_bot_id, // 机器人ID
-        //             imPlatform: purchase_bot_im_platform, // 平台
-        //             imIsGroup: '好友'
-        //         }
-        //         await handleSuppliercontact(supplierContactInfo)
-        //     }));
-        // }
-
-        // // // 处理供应商联系人
-        // async function handleSuppliercontact(supplierContactInfo) {
-        //     const { company_id, supplier_name } = supplierContactInfo;
-        //     const supplierContactResult = await ICCRMAPI.getSupplierContact(company_id, supplier_name)
-        //     if (!supplierContactResult) await ICCRMAPI.createSupplierContact(supplierContactInfo)
-        // }
+        sendResponse({ success: true });
     }
-
-
-    sendResponse({ success: true });
 });
