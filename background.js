@@ -126,7 +126,7 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
             url: "*://*.ic.net.cn/*"  // 匹配目标网站的所有标签页
         });
         if (jywTabs.length) {
-            await chrome.tabs.update(jywTabs[0].id, { url: url });;
+            await chrome.tabs.update(jywTabs[0].id, { url: url });
         }
     }
 
@@ -181,11 +181,11 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
         console.log('gatherPlan', gatherPlan);
 
         // 跳转【华强网】标签页
-        if (gatherPlan.jyw && !gatherPlan.hqw && !gatherPlan.lcsc) {
+        if (gatherPlan.jyw && !gatherPlan.hqw) {
             console.log('跳转至【华强网】对应物料编码的搜索页面');
             await chrome.storage.local.remove('executeGetSuppliersProcess');
             await sleep(2000)
-            const materialCode = handleEncodeURIComponent(gatherPlan.inquiryMaterialCode.trim());
+            const materialCode = handleEncodeURIComponent(gatherPlan.inquiryMaterialCode?.trim());
 
             const urlHqw = `https://s.hqew.com/${materialCode}.html`;
             const newTab = await chrome.tabs.create({ url: urlHqw });
@@ -208,35 +208,9 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
                 url: "*://*.hqew.com/*"  // 匹配目标网站的所有标签页
             });
             if (hqwTabs.length) await chrome.tabs.remove(hqwTabs[0].id);
-
-            // 跳转【立创商城】标签页
-            await chrome.storage.local.remove('executeGetSuppliersProcess');
-            await sleep(2000)
-
-            const urlLcsc = `https://so.szlcsc.com/global.html?k=${materialCode}`
-            const newTabLcsc = await chrome.tabs.create({ url: urlLcsc });
-            // 等待新页面加载完成
-            await new Promise(resolve => {
-                chrome.tabs.onUpdated.addListener(function listener(tabId, info) {
-                    if (tabId === newTabLcsc.id && info.status === 'complete') {
-                        chrome.tabs.onUpdated.removeListener(listener);
-                        resolve();
-                    }
-                });
-            });
-            await sleep(2000)
-            await chrome.storage.local.set({ executeGetSuppliersProcess: true }); // 存储状态 等待跳转完成页面加载获取供应商数据
-            await sleep(2000)
-            // 先清除状态,再关闭【立创商城】标签页
-            await chrome.storage.local.remove('executeGetSuppliersProcess');
-            console.log('【立创商城】标签页关闭完成。');
-            const lcscTabs = await chrome.tabs.query({
-                url: "*://*.szlcsc.com/*"  // 匹配目标网站的所有标签页
-            });
-            if (lcscTabs.length) await chrome.tabs.remove(lcscTabs[0].id);
         }
 
-        if (gatherPlan.hqw && gatherPlan.jyw && gatherPlan.lcsc) {
+        if (gatherPlan.hqw && gatherPlan.jyw) {
             const totalSuppliers = [...gatherPlan.jywSuppliers, ...gatherPlan.hqwSuppliers];
             const deWeightTotalSuppliers = deWeightSuppliers(totalSuppliers);
 
@@ -247,11 +221,11 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
                 suppliers: deWeightTotalSuppliers
             }
 
-            console.log('交易网、华强网、立创商城的数据全部采集完成！！！！！！！！', '\n 总数据: ', totalSuppliers, '\n 去重后数据: ', deWeightTotalSuppliers, '\n【立创商城】', gatherPlan.lcscMaterialInfos), body;
-            // await ICCRMAPI.createTempData({ company_id: companyId, kind: 'suppliers', json_data: JSON.stringify(body) })
+            console.log('【交易网】、【华强网】的数据全部采集完成！！！！！！！！', '\n 总数据: ', totalSuppliers, '\n 去重后数据: ', deWeightTotalSuppliers, body);
+            await ICCRMAPI.createTempData({ company_id: gatherPlan.companyId, kind: 'suppliers', json_data: JSON.stringify(body) })
 
-            // handleClearGatherPlan()
-            // console.log('清空数据-----------', gatherPlan);
+            handleClearGatherPlan()
+            console.log('清空数据-----------', gatherPlan);
         }
 
         sendResponse({ success: true });
