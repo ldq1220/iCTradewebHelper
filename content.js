@@ -92,7 +92,7 @@ if (IC_URL.includes(window.location.hostname)) {
                 if (!hasInclude) continue
                 console.log('查到有插件负责的公司', element)
                 const { inquiry_record_id, id, material_code } = element
-                chrome.storage.local.set({ executeGetSuppliersProcess: true }); // 存储状态 等待跳转完成页面加载获取供应商数据
+                await chrome.storage.local.set({ executeGetSuppliersProcess: true }); // 存储状态 等待跳转完成页面加载获取供应商数据
                 await sleep(2000) // 等待2秒
                 await chrome.runtime.sendMessage({ action: "gotoJywSearchPage", inquiryRecordId: inquiry_record_id, inquiryMaterialId: id, searchValue: material_code, companyId: element.inquiry_record.company_id }); // 跳转至IC交易网对应物料编码的搜索页面
                 break
