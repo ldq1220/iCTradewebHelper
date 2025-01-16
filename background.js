@@ -9,6 +9,10 @@ const gatherPlan = {
     hqwSuppliers: [],
     lcsc: false,
     lcscMaterialInfos: [],
+    companyId: null,
+    inquiryRecordId: null,
+    inquiryMaterialId: null,
+    inquiryMaterialCode: null,
 }
 const sourceData = [
     {
@@ -26,6 +30,23 @@ const sourceData = [
 ]
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
+}
+function handleEncodeURIComponent(str) {
+    return encodeURIComponent(str);
+}
+function handleClearGatherPlan() {
+    Object.assign(gatherPlan, {
+        jyw: false,
+        jywSuppliers: [],
+        hqw: false,
+        hqwSuppliers: [],
+        lcsc: false,
+        lcscMaterialInfos: [],
+        companyId: null,
+        inquiryRecordId: null,
+        inquiryMaterialId: null,
+        inquiryMaterialCode: null,
+    })
 }
 
 // 供应商去重
@@ -92,10 +113,15 @@ chrome.runtime.onStartup.addListener(() => {
 
 // 监听 跳转至IC交易网搜索页面
 chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
-    if (request.action === "gotoSearchPage") {
-        const { inquiry_record_id, inquiryMaterialId, searchValue, companyId } = request;
-        const params = `inquiryRecordId=${inquiry_record_id}&inquiryMaterialId=${inquiryMaterialId}&inquiryMaterialCode=${searchValue}&companyId=${companyId}`
-        const url = `https://www.ic.net.cn/search/${searchValue.trim()}.html?page=1&${params}`;
+    if (request.action === "gotoJywSearchPage") {
+        const { inquiryRecordId, inquiryMaterialId, searchValue, companyId } = request;
+        gatherPlan.companyId = companyId;
+        gatherPlan.inquiryRecordId = inquiryRecordId;
+        gatherPlan.inquiryMaterialId = inquiryMaterialId;
+        gatherPlan.inquiryMaterialCode = searchValue;
+
+        const materialCode = handleEncodeURIComponent(searchValue.trim());
+        const url = `https://www.ic.net.cn/search/${materialCode}.html`;
         const jywTabs = await chrome.tabs.query({
             url: "*://*.ic.net.cn/*"  // 匹配目标网站的所有标签页
         });
@@ -110,12 +136,7 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
 // 清空数据
 chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
     if (request.action === "clearGatherPlan") {
-        Object.assign(gatherPlan, {
-            jyw: false,
-            jywSuppliers: [],
-            hqw: false,
-            hqwSuppliers: [],
-        })
+        handleClearGatherPlan();
         console.log('IC交易网一次轮询开始时：清空数据-----------', gatherPlan);
         sendResponse({ success: true });
     }
@@ -126,10 +147,6 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
     if (request.action === "suppliersGatherOver") {
         const {
             suppliersResult,
-            companyId,
-            inquiryRecordId,
-            inquiryMaterialId,
-            inquiryMaterialCode,
             source,
         } = request.suppliersGatherOverData;
         const { success, data, error } = suppliersResult;
@@ -168,9 +185,10 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
             console.log('跳转至【华强网】对应物料编码的搜索页面');
             await chrome.storage.local.remove('executeGetSuppliersProcess');
             await sleep(2000)
+            const materialCode = handleEncodeURIComponent(gatherPlan.inquiryMaterialCode.trim());
 
-            const url = `https://s.hqew.com/${inquiryMaterialCode.trim()}.html?inquiryRecordId=${inquiryRecordId}&inquiryMaterialId=${inquiryMaterialId}&inquiryMaterialCode=${inquiryMaterialCode}&companyId=${companyId}`;
-            const newTab = await chrome.tabs.create({ url: url });
+            const urlHqw = `https://s.hqew.com/${materialCode}.html`;
+            const newTab = await chrome.tabs.create({ url: urlHqw });
             // 等待新页面加载完成
             await new Promise(resolve => {
                 chrome.tabs.onUpdated.addListener(function listener(tabId, info) {
@@ -194,8 +212,8 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
             // 跳转【立创商城】标签页
             await chrome.storage.local.remove('executeGetSuppliersProcess');
             await sleep(2000)
-            const urlLcsc = `https://so.szlcsc.com/global.html?k=${inquiryMaterialCode.trim()}&inquiryRecordId=${inquiryRecordId}&inquiryMaterialId=${inquiryMaterialId}&inquiryMaterialCode=${inquiryMaterialCode}&companyId=${companyId}`
 
+            const urlLcsc = `https://so.szlcsc.com/global.html?k=${materialCode}`
             const newTabLcsc = await chrome.tabs.create({ url: urlLcsc });
             // 等待新页面加载完成
             await new Promise(resolve => {
@@ -222,23 +240,18 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
             const totalSuppliers = [...gatherPlan.jywSuppliers, ...gatherPlan.hqwSuppliers];
             const deWeightTotalSuppliers = deWeightSuppliers(totalSuppliers);
 
-            console.log('交易网、华强网、立创商城的数据全部采集完成！！！！！！！！', '\n 总数据: ', totalSuppliers, '\n 去重后数据: ', deWeightTotalSuppliers, '\n【立创商城】', gatherPlan.lcscMaterialInfos);
-
             const body = {
-                companyId: companyId,
-                inquiryMaterialId: inquiryMaterialId,
-                inquiryRecordId: inquiryRecordId,
+                companyId: gatherPlan.companyId,
+                inquiryMaterialId: gatherPlan.inquiryMaterialId,
+                inquiryRecordId: gatherPlan.inquiryRecordId,
                 suppliers: deWeightTotalSuppliers
             }
+
+            console.log('交易网、华强网、立创商城的数据全部采集完成！！！！！！！！', '\n 总数据: ', totalSuppliers, '\n 去重后数据: ', deWeightTotalSuppliers, '\n【立创商城】', gatherPlan.lcscMaterialInfos), body;
             // await ICCRMAPI.createTempData({ company_id: companyId, kind: 'suppliers', json_data: JSON.stringify(body) })
 
-            Object.assign(gatherPlan, {
-                jyw: false,
-                jywSuppliers: [],
-                hqw: false,
-                hqwSuppliers: [],
-            })
-            console.log('清空数据-----------', gatherPlan);
+            // handleClearGatherPlan()
+            // console.log('清空数据-----------', gatherPlan);
         }
 
         sendResponse({ success: true });

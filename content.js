@@ -54,9 +54,9 @@ if (IC_URL.includes(window.location.hostname)) {
                         chrome.runtime.sendMessage({ action: "clearGatherPlan" });
                     }
 
-                    // await handleInquiryTask(); // 等待异步任务完成
-                    const suppliersResult = await getSuppliersProcessByLcsc(); // 获取【立创商城】供应商信息
-                    console.log('【立创商城】供应商信息', suppliersResult);
+                    await handleInquiryTask(); // 等待异步任务完成
+                    // const suppliersResult = await getSuppliersProcessByLcsc(); // 获取【立创商城】供应商信息
+                    // console.log('【立创商城】供应商信息', suppliersResult);
                     sendResponse({ success: true });
                 } catch (error) {
                     logger.error('轮询过程发生错误:', error);
@@ -93,9 +93,8 @@ if (IC_URL.includes(window.location.hostname)) {
                 console.log('查到有插件负责的公司', element)
                 const { inquiry_record_id, id, material_code } = element
                 chrome.storage.local.set({ executeGetSuppliersProcess: true }); // 存储状态 等待跳转完成页面加载获取供应商数据
-
                 await sleep(2000) // 等待2秒
-                await UTILS.gotoSearchPage(inquiry_record_id, id, material_code, element.inquiry_record.company_id) // 跳转至IC交易网对应物料编码的搜索页面
+                await chrome.runtime.sendMessage({ action: "gotoJywSearchPage", inquiryRecordId: inquiry_record_id, inquiryMaterialId: id, searchValue: material_code, companyId: element.inquiry_record.company_id }); // 跳转至IC交易网对应物料编码的搜索页面
                 break
             }
         } catch (error) {
@@ -124,10 +123,6 @@ if (IC_URL.includes(window.location.hostname)) {
 
                 const suppliersGatherOverData = {
                     suppliersResult,
-                    companyId: query.companyId,
-                    inquiryRecordId: query.inquiryRecordId,
-                    inquiryMaterialId: query.inquiryMaterialId,
-                    inquiryMaterialCode: query.inquiryMaterialCode,
                     source: window.location.hostname,
                 }
                 console.log('供应商采集结束发送消息通道 suppliersGatherOverData', suppliersGatherOverData);
