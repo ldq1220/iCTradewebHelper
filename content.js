@@ -144,6 +144,7 @@ if (IC_URL.includes(window.location.hostname)) {
                 if (supplierResult) {
                     // 更新供应商信息
                     const { company_ids, inquiry_material, brands: supplierBrands, companys, id: supplierId } = supplierResult;
+                    let supplierSource = supplierResult?.source || []
                     if (!company_ids.includes(userCompanyId)) {
                         company_ids.push(userCompanyId)
                         companys.push({ id: Number(userCompanyId) })
@@ -165,6 +166,7 @@ if (IC_URL.includes(window.location.hostname)) {
                                 brand_name: item.name,
                             }
                         }) : [],
+                        source: [...new Set([...supplierSource, 'jyw'])],
                         ...supplierInfo
                     })
                 } else {
@@ -177,6 +179,7 @@ if (IC_URL.includes(window.location.hostname)) {
                             proportion: item.percentage,
                             brand_name: item.name,
                         })) : [],
+                        source: ['jyw'],
                         ...supplierInfo
                     })
                 }
