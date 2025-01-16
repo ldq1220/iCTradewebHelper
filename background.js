@@ -210,9 +210,9 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
             if (hqwTabs.length) await chrome.tabs.remove(hqwTabs[0].id);
 
             // 跳转【立创商城】标签页
+            console.log('跳转至【华强网】对应物料编码的搜索页面');
             await chrome.storage.local.remove('executeGetSuppliersProcess');
             await sleep(2000)
-
             const urlLcsc = `https://so.szlcsc.com/global.html?k=${materialCode}`
             const newTabLcsc = await chrome.tabs.create({ url: urlLcsc });
             // 等待新页面加载完成
@@ -247,11 +247,11 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
                 suppliers: deWeightTotalSuppliers
             }
 
-            console.log('交易网、华强网、立创商城的数据全部采集完成！！！！！！！！', '\n 总数据: ', totalSuppliers, '\n 去重后数据: ', deWeightTotalSuppliers, '\n【立创商城】', gatherPlan.lcscMaterialInfos), body;
+            console.log('交易网、华强网、立创商城的数据全部采集完成！！！！！！！！', '\n 总数据: ', totalSuppliers, '\n 去重后数据: ', deWeightTotalSuppliers, '\n【立创商城】', gatherPlan.lcscMaterialInfos, body);
             // await ICCRMAPI.createTempData({ company_id: companyId, kind: 'suppliers', json_data: JSON.stringify(body) })
 
-            // handleClearGatherPlan()
-            // console.log('清空数据-----------', gatherPlan);
+            handleClearGatherPlan()
+            console.log('清空数据-----------', gatherPlan);
         }
 
         sendResponse({ success: true });
