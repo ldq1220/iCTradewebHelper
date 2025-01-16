@@ -100,8 +100,8 @@ if (IC_URL.includes(window.location.hostname)) {
         await chrome.storage.local.get(['executeGetSuppliersProcess'], async (result) => {
             if (result.executeGetSuppliersProcess) {
                 const { inquiry_status } = await ICCRMAPI.getInquiryRecord(query.inquiryRecordId) // 获取 询料记录
-                const { inquiry_supplier_number, purchase_bot_id, purchase_bot_im_platform } = await ICCRMAPI.getSystemConfig(query.companyId) // 获取系统配置
-                const suppliersResult = await getSuppliersProcess(inquiry_supplier_number); // 获取供应商信息
+                const { purchase_bot_id, purchase_bot_im_platform } = await ICCRMAPI.getSystemConfig(query.companyId) // 获取系统配置
+                const suppliersResult = await getSuppliersProcess(); // 获取供应商信息
                 logger.info('获取供应商信息执行任务结果:', suppliersResult);
                 chrome.storage.local.remove('executeGetSuppliersProcess');  // 执行后清除状态
 
@@ -115,15 +115,13 @@ if (IC_URL.includes(window.location.hostname)) {
                     // await ICCRMAPI.updateInquiryMaterial(query.inquiryMaterialId, { inquiry_material_status: "2" },); // 更新询料物料状态为 待询价
                     // await ICCRMAPI.updateInquiryRecord(query.inquiryRecordId, { inquiry_status: "1" }) // 更新询料任务状态为 待询价
 
-                    await ICCRMAPI.createTempData({ companyId: query.companyId, kind: 'suppliers', json_data:  JSON.stringify(data)})
-                    
+                    await ICCRMAPI.createTempData({ companyId: query.companyId, kind: 'suppliers', json_data: JSON.stringify(data) })
                 }
             }
         });
 
         // 处理 供应商数据
         async function handleSupplierData(data, purchase_bot_id, purchase_bot_im_platform, companyId) {
-
             await Promise.all(data.map(async (item) => {
                 const { companyName, companyTag, qqAccount, companyInfo } = item;
                 const { memberYears, contacts, location, addresses, brands } = companyInfo;

@@ -141,7 +141,6 @@ function summarizeSuppliers(supplierStore, inquiry_supplier_number) {
 
 // 处理供应信息
 window.getSuppliersProcess = function () {
-
     const inquiry_supplier_number = 20;
     const batchSize = 50;
 
@@ -232,7 +231,7 @@ window.getSuppliersProcess = function () {
                     const resultBatchIdElement = stairTr.querySelector(".result_batchNumber");
                     if (resultBatchIdElement) {
                         const batchIdText = resultBatchIdElement.textContent.trim();
-                        if (batchIdText) elementData.batchId = batchIdText; 
+                        if (batchIdText) elementData.batchId = batchIdText;
                     }
 
                     // 获取数量

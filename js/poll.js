@@ -9,11 +9,11 @@ const Poll = {
     async pollHandler() {
         try {
             // 检查当前是否在目标网站
-            const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-            const currentTab = tabs[0];
-            if (currentTab && currentTab.url.includes('www.ic.net.cn')) {
-                // 向content script发送轮询消息
-                await chrome.tabs.sendMessage(currentTab.id, {
+            const tabs = await chrome.tabs.query({
+                url: "*://*.ic.net.cn/*"  // 匹配【交易网】所有标签页
+            });
+            if (tabs.length) {
+                await chrome.tabs.sendMessage(tabs[0].id, {
                     action: 'startPoll'
                 });
             }
