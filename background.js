@@ -244,10 +244,19 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
                 companyId: gatherPlan.companyId,
                 inquiryMaterialId: gatherPlan.inquiryMaterialId,
                 inquiryRecordId: gatherPlan.inquiryRecordId,
-                suppliers: deWeightTotalSuppliers
+                suppliers: deWeightTotalSuppliers,
+                lcscMaterialInfos: gatherPlan.lcscMaterialInfos
             }
 
             console.log('交易网、华强网、立创商城的数据全部采集完成！！！！！！！！', '\n 总数据: ', totalSuppliers, '\n 去重后数据: ', deWeightTotalSuppliers, '\n【立创商城】', gatherPlan.lcscMaterialInfos, body);
+
+            // 更新询料任务状态
+            const { inquiry_status } = await ICCRMAPI.getInquiryRecord(gatherPlan.inquiryRecordId) // 获取 询料记录
+            if (deWeightTotalSuppliers.length === 0) {
+                await ICCRMAPI.updateInquiryMaterial(gatherPlan.inquiryMaterialId, { inquiry_material_status: "1", gather_error: '当前物料编码，未找到供应商信息。' },); // 更新询料物料状态为 采集失败
+                if (inquiry_status === '0') await ICCRMAPI.updateInquiryRecord(gatherPlan.inquiryRecordId, { inquiry_status: "-1", gather_error: '当前物料编码，未找到供应商信息。' }) // 更新询料任务状态为 采集失败
+            }
+
             // await ICCRMAPI.createTempData({ company_id: companyId, kind: 'suppliers', json_data: JSON.stringify(body) })
 
             handleClearGatherPlan()
