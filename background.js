@@ -54,7 +54,7 @@ function deWeightSuppliers(suppliers) {
     const seenCompanies = new Set();
     let storage = suppliers
         .filter(item => item.companyName.length > 0 && item.qqAccount.length > 0)
-        .filter(item => {
+        .filter((item, index) => {
             // 获取第一个公司名作为唯一标识
             const companyName = item.companyName;
             // 如果这个公司名已经出现过，返回false过滤掉
@@ -68,6 +68,11 @@ function deWeightSuppliers(suppliers) {
             delete item.company;
             delete item.visibleLinks;
             return true;
+        }).map(item => {
+            return {
+                id: index + 1,
+                ...item
+            }
         });
     return storage;
 }
