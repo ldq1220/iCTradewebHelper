@@ -71,7 +71,7 @@ const ICCRMAPI = {
 
     // 获取一个询料任务
     async getInquiryRecord(id) {
-        return this.request(`/inquiry_records:get?filter[id]=${id}`, {
+        return this.request(`/inquiry_records:get?filterByTk=${id}`, {
             method: 'GET'
         });
     },
@@ -93,14 +93,14 @@ const ICCRMAPI = {
 
     // 获取询料物料
     async getInquiryMaterialById(id) {
-        return this.request(`/inquiry_materials:get?filter[id]=${id}`, {
+        return this.request(`/inquiry_materials:get?filterByTk=${id}`, {
             method: 'GET'
         });
     },
 
     // 更新 询料物料
     async updateInquiryMaterial(id, data) {
-        return this.request(`/inquiry_materials:update?filter[id]=${id}`, {
+        return this.request(`/inquiry_materials:update?filterByTk=${id}`, {
             method: 'POST',
             body: data
         });

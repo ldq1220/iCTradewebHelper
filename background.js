@@ -222,6 +222,12 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
             }
 
             console.log('【交易网】、【华强网】的数据全部采集完成！！！！！！！！', '\n 总数据: ', totalSuppliers, '\n 去重后数据: ', deWeightTotalSuppliers, body);
+
+            // 更新询料物料状态 6: 已采集
+            await ICCRMAPI.updateInquiryMaterial(gatherPlan.inquiryMaterialId, {
+                inquiry_material_status: '6'
+            })
+            // 上报 创建临时数据
             await ICCRMAPI.createTempData({ company_id: gatherPlan.companyId, kind: 'suppliers', json_data: JSON.stringify(body) })
 
             handleClearGatherPlan()
