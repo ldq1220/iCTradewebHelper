@@ -257,6 +257,11 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
                 if (inquiry_status === '0') await ICCRMAPI.updateInquiryRecord(gatherPlan.inquiryRecordId, { inquiry_status: "-1", gather_error: '当前物料编码，未找到供应商信息。' }) // 更新询料任务状态为 采集失败
             }
 
+            // 更新询料物料状态 6: 已采集
+            // await ICCRMAPI.updateInquiryMaterial(gatherPlan.inquiryMaterialId, {
+            //     inquiry_material_status: '6'
+            // })
+            // 上报 创建临时数据
             // await ICCRMAPI.createTempData({ company_id: companyId, kind: 'suppliers', json_data: JSON.stringify(body) })
 
             handleClearGatherPlan()
