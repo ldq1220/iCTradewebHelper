@@ -23,7 +23,7 @@ function summarizeSuppliers(supplierStore, inquiry_supplier_number) {
 
 // 处理供应信息
 window.getSuppliersProcessByHqw = function () {
-    const inquiry_supplier_number = 20;
+    const inquiry_supplier_number = 50;
     const batchSize = 50;
 
     return new Promise((resolve) => {
