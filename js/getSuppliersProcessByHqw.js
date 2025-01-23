@@ -29,7 +29,7 @@ window.getSuppliersProcessByHqw = function () {
     return new Promise((resolve) => {
         try {
             const supplierStore = [];
-            const ecDataTrElements = document.getElementsByClassName("ec-data");
+            const ecDataTrElements = document.getElementsByClassName('ec-data');
 
             if (ecDataTrElements.length === 0) {
                 resolve({
@@ -56,6 +56,7 @@ window.getSuppliersProcessByHqw = function () {
                         companyTag: [],
                         companyInfo: {},
                         materialId: [],
+                        materialTags: [],
                         brand: null,
                         batchId: null,
                         totalNumber: null,
@@ -63,20 +64,21 @@ window.getSuppliersProcessByHqw = function () {
                         storehouse: null,
                         desc: null,
                         qqAccount: [],
-                        source: 'hqw'
+                        source: 'hqw',
+                        materialDate: '',
                     };
 
                     // 获取供应信息
-                    const supplyElement = ecDataTr.querySelector(".j-company-td");
+                    const supplyElement = ecDataTr.querySelector('.j-company-td');
                     if (supplyElement) {
                         // 供应商公司名称
                         elementData.company = supplyElement;
-                        const supplierElement = supplyElement.querySelector(".company");
+                        const supplierElement = supplyElement.querySelector('.company');
                         const content = supplierElement.textContent.trim();
                         if (content) elementData.companyName.push(content);
                         // 供应商标签
-                        const companyTagElement = ecDataTr.querySelector(".company-row2");
-                        const AElementAll = companyTagElement.querySelectorAll("a:not(.stick-tag)");
+                        const companyTagElement = ecDataTr.querySelector('.company-row2');
+                        const AElementAll = companyTagElement.querySelectorAll('a:not(.stick-tag)');
                         AElementAll.forEach(element => {
                             const childElements = element.children;
                             Array.from(childElements).forEach(child => {
@@ -87,56 +89,72 @@ window.getSuppliersProcessByHqw = function () {
                     }
 
                     // 获取物料编号
-                    const materialElement = ecDataTr.querySelector(".td-model-data").children[0];
+                    const materialElement = ecDataTr.querySelector('.td-model-data').children[0];
                     if (materialElement) {
                         const materialIdText = materialElement.textContent.trim();
                         if (materialIdText) elementData.materialId.push(materialIdText);
                     }
 
+                    // 获取物料标签
+                    const materialTagsElement = ecDataTr.querySelector('.td-model-data').nextElementSibling;
+                    console.log('materialTagsElement', materialTagsElement);
+
+                    if (materialTagsElement) {
+                        const tagClassName = materialTagsElement.querySelector('i').className;
+                        if (tagClassName) elementData.materialTags.push(tagClassName);
+                    }
+
                     // 品牌
-                    const brandElement = ecDataTr.querySelector(".td-brand").querySelector(".list-pro");
+                    const brandElement = ecDataTr.querySelector('.td-brand').querySelector('.list-pro');
                     if (brandElement) {
                         const brandText = brandElement.textContent.trim();
                         if (brandText) elementData.brand = brandText;
                     }
 
                     // 批次
-                    const batchElement = ecDataTr.querySelector(".td-pproductDate").querySelector(".over");
+                    const batchElement = ecDataTr.querySelector('.td-pproductDate').querySelector('.over');
                     if (batchElement) {
                         const batchText = batchElement.textContent.trim();
                         if (batchText) elementData.batchId = batchText;
                     }
 
                     // 数量
-                    const totalNumberElement = ecDataTr.querySelector(".td-stockNum").querySelector(".over");
+                    const totalNumberElement = ecDataTr.querySelector('.td-stockNum').querySelector('.over');
                     if (totalNumberElement) {
                         const totalNumberText = totalNumberElement.textContent.trim();
                         if (totalNumberText) elementData.totalNumber = totalNumberText;
                     }
 
                     // 封装
-                    const packagingElement = ecDataTr.querySelector(".td-ppackage").querySelector(".over");
+                    const packagingElement = ecDataTr.querySelector('.td-ppackage').querySelector('.over');
                     if (packagingElement) {
                         const packagingText = packagingElement.textContent.trim();
                         if (packagingText) elementData.packaging = packagingText;
                     }
 
                     // 仓库
-                    const storageLocationElement = ecDataTr.querySelector(".td-storeLocation").querySelector(".over");
+                    const storageLocationElement = ecDataTr.querySelector('.td-storeLocation').querySelector('.over');
                     if (storageLocationElement) {
                         const storageLocationText = storageLocationElement.textContent.trim();
                         if (storageLocationText) elementData.storehouse = storageLocationText;
                     }
 
                     // 说明
-                    const descElement = ecDataTr.querySelector(".td-premark").querySelector(".list-pro");
+                    const descElement = ecDataTr.querySelector('.td-premark').querySelector('.list-pro');
                     if (descElement) {
                         const descText = descElement.textContent.trim();
                         if (descText) elementData.desc = descText;
                     }
 
+                    // 获取物料日期
+                    const materialDateElement = ecDataTr.querySelector('.td-premark').nextElementSibling.querySelector('.over');
+                    if (materialDateElement) {
+                        const materialDateText = materialDateElement.textContent.trim();
+                        if (materialDateText) elementData.materialDate = materialDateText;
+                    }
+
                     // QQ账号
-                    const qqAccountElement = ecDataTr.querySelector(".ver-mid").querySelector(".customerqq");
+                    const qqAccountElement = ecDataTr.querySelector('.ver-mid').querySelector('.customerqq');
                     if (qqAccountElement) {
                         const qqAccountText = qqAccountElement.getAttribute('qq');
                         if (qqAccountText) elementData.qqAccount.push(qqAccountText);
