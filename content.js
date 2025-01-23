@@ -56,7 +56,9 @@ if (IC_URL.includes(window.location.hostname)) {
 
                     await handleInquiryTask(); // 等待异步任务完成
                     // const suppliersResult = await getSuppliersProcessByLcsc(); // 获取【立创商城】供应商信息
-                    // console.log('【立创商城】供应商信息', suppliersResult);
+                    // const suppliersResult = await getSuppliersProcessByHqw(); // 获取供应商信息
+                    // const suppliersResult = await getSuppliersProcessByJyw(); // 获取供应商信息
+                    // console.log('供应商信息', suppliersResult);
                     sendResponse({ success: true });
                 } catch (error) {
                     logger.error('轮询过程发生错误:', error);
