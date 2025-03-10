@@ -38,10 +38,6 @@ function handleClearGatherPlan() {
     Object.assign(gatherPlan, {
         jyw: false,
         jywSuppliers: [],
-        hqw: false,
-        hqwSuppliers: [],
-        lcsc: false,
-        lcscMaterialInfos: [],
         companyId: null,
         inquiryRecordId: null,
         inquiryMaterialId: null,
@@ -166,59 +162,10 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
                 suppliersCount: data?.length,
                 error
             });
-        } else if (sourceName === 'hqw') {
-            gatherPlan.hqw = true;
-            gatherPlan.hqwSuppliers = data;
-            console.log('【华强网】采集完成:', {
-                success,
-                suppliersCount: data?.length,
-                error
-            });
-        } else if (sourceName === 'lcsc') {
-            gatherPlan.lcsc = true;
-            gatherPlan.lcscMaterialInfos = data;
-            console.log('【立创商城】采集完成:', {
-                success,
-                suppliersCount: data?.length,
-                error
-            });
         }
 
-        console.log('gatherPlan', gatherPlan);
-
-        // 跳转【华强网】标签页
-        if (gatherPlan.jyw && !gatherPlan.hqw) {
-            console.log('跳转至【华强网】对应物料编码的搜索页面');
-            await chrome.storage.local.remove('executeGetSuppliersProcess');
-            await sleep(2000)
-            const materialCode = handleEncodeURIComponent(gatherPlan.inquiryMaterialCode?.trim());
-
-            const urlHqw = `https://s.hqew.com/${materialCode}.html`;
-            const newTab = await chrome.tabs.create({ url: urlHqw });
-            // 等待新页面加载完成
-            await new Promise(resolve => {
-                chrome.tabs.onUpdated.addListener(function listener(tabId, info) {
-                    if (tabId === newTab.id && info.status === 'complete') {
-                        chrome.tabs.onUpdated.removeListener(listener);
-                        resolve();
-                    }
-                });
-            });
-            await sleep(2000)
-            await chrome.storage.local.set({ executeGetSuppliersProcess: true }); // 存储状态 等待跳转完成页面加载获取供应商数据
-            await sleep(2000)
-            // 先清除状态,再关闭【华强网】标签页
-            await chrome.storage.local.remove('executeGetSuppliersProcess');
-            console.log('【华强网】标签页关闭完成。');
-            const hqwTabs = await chrome.tabs.query({
-                url: "*://*.hqew.com/*"  // 匹配目标网站的所有标签页
-            });
-            if (hqwTabs.length) await chrome.tabs.remove(hqwTabs[0].id);
-        }
-
-        if (gatherPlan.hqw && gatherPlan.jyw) {
-            const totalSuppliers = [...gatherPlan.jywSuppliers, ...gatherPlan.hqwSuppliers];
-            const deWeightTotalSuppliers = deWeightSuppliers(totalSuppliers);
+        if (gatherPlan.jyw) {
+            const deWeightTotalSuppliers = deWeightSuppliers(gatherPlan.jywSuppliers);
 
             const body = {
                 companyId: gatherPlan.companyId,
@@ -227,17 +174,25 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
                 suppliers: deWeightTotalSuppliers
             }
 
-            console.log('【交易网】、【华强网】的数据全部采集完成！！！！！！！！', '\n 总数据: ', totalSuppliers, '\n 去重后数据: ', deWeightTotalSuppliers, body);
+            console.log('【交易网】的数据全部采集完成！！！！！！！！', '\n 总数据: ', body);
 
             // 更新询料物料状态 6: 已采集
-            await ICCRMAPI.updateInquiryMaterial(gatherPlan.inquiryMaterialId, {
-                inquiry_material_status: '6'
-            })
+            // await ICCRMAPI.updateInquiryMaterial(gatherPlan.inquiryMaterialId, {
+            //     inquiry_material_status: '6'
+            // })
             // 上报 创建临时数据
-            await ICCRMAPI.createTempData({ company_id: gatherPlan.companyId, kind: 'suppliers', json_data: JSON.stringify(body) })
+            // await ICCRMAPI.createTempData({ company_id: gatherPlan.companyId, kind: 'suppliers', json_data: JSON.stringify(body) })
 
             handleClearGatherPlan()
             console.log('清空数据-----------', gatherPlan);
+
+            // 跳转至【交易网】首页
+            // const jywTabs = await chrome.tabs.query({
+            //     url: "*://*.ic.net.cn/*"  // 匹配目标网站的所有标签页
+            // });
+            // if (jywTabs.length) {
+            //     await chrome.tabs.update(jywTabs[0].id, { url: 'https://www.ic.net.cn' });
+            // }
         }
 
         sendResponse({ success: true });

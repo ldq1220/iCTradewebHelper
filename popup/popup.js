@@ -4,6 +4,14 @@ async function updateLastRunTime() {
     lastRunTimeElement.textContent = result.lastPollTime || '-';
 }
 
+function updateCurrentTime() {
+    const now = new Date();
+    const hours = now.getHours().toString().padStart(2, '0');
+    const minutes = now.getMinutes().toString().padStart(2, '0');
+    const seconds = now.getSeconds().toString().padStart(2, '0');
+    document.getElementById('currentTime').textContent = `${hours}:${minutes}:${seconds}`;
+}
+
 // 验证和显示错误信息
 function validateInputs() {
     const companyIds = document.getElementById('companyIds').value.trim();
@@ -89,6 +97,8 @@ async function handleInputChange() {
 document.addEventListener('DOMContentLoaded', function () {
     // 更新上次运行时间
     updateLastRunTime();
+    updateCurrentTime();
+    setInterval(updateCurrentTime, 1000);
 
     // 获取当前标签页信息
     chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
@@ -113,8 +123,8 @@ document.addEventListener('DOMContentLoaded', function () {
         if (result.limit) {
             limitInput.value = result.limit
         } else {
-            limitInput.value = 5
-            chrome.storage.local.set({ limit: 5 })
+            limitInput.value = 20
+            chrome.storage.local.set({ limit: 20 })
         };
     });
 

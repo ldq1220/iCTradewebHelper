@@ -33,7 +33,6 @@ if (IC_URL.includes(window.location.hostname)) {
     for (const [key, value] of urlParams.entries()) {
         query[key] = value;
     }
-    console.log('content.js 执行 window.location.hostname \n', window.location.hostname);
 
     // 添加消息监听器
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -55,10 +54,6 @@ if (IC_URL.includes(window.location.hostname)) {
                     }
 
                     await handleInquiryTask(); // 等待异步任务完成
-                    // const suppliersResult = await getSuppliersProcessByLcsc(); // 获取【立创商城】供应商信息
-                    // const suppliersResult = await getSuppliersProcessByHqw(); // 获取供应商信息
-                    // const suppliersResult = await getSuppliersProcessByJyw(); // 获取供应商信息
-                    // console.log('供应商信息', suppliersResult);
                     sendResponse({ success: true });
                 } catch (error) {
                     logger.error('轮询过程发生错误:', error);
@@ -83,22 +78,35 @@ if (IC_URL.includes(window.location.hostname)) {
 
             const { limit } = await chrome.storage.local.get(['limit']);
             const inquiryMaterialResult = await ICCRMAPI.getInquiryMaterialByStatus("0", limit) // 获取待采集状态的询料任务
-            const inquiryMaterialResultCompanyIds = inquiryMaterialResult.map(item => item.inquiry_record.company_id)
-            const hasInclude = companyIds.some(item => inquiryMaterialResultCompanyIds.includes(item))
-            if (!hasInclude) return logger.info('获取到待采集物料中，没有插件负责的公司！！')
 
-            // 找出第一个满足条件的询料物料
-            for (let i = 0; i < inquiryMaterialResult.length; i++) {
-                const element = inquiryMaterialResult[i];
-                const hasInclude = companyIds.includes(element.inquiry_record.company_id)
-                if (!hasInclude) continue
-                console.log('查到有插件负责的公司', element)
-                const { inquiry_record_id, id, material_code } = element
-                await chrome.storage.local.set({ executeGetSuppliersProcess: true }); // 存储状态 等待跳转完成页面加载获取供应商数据
-                await sleep(2000)
-                await chrome.runtime.sendMessage({ action: "gotoJywSearchPage", inquiryRecordId: inquiry_record_id, inquiryMaterialId: id, searchValue: material_code, companyId: element.inquiry_record.company_id }); // 跳转至IC交易网对应物料编码的搜索页面
-                break
+            // 随机选择一个询料物料
+            if (inquiryMaterialResult.length > 0) {
+                const randomIndex = Math.floor(Math.random() * inquiryMaterialResult.length);
+                const element = inquiryMaterialResult[randomIndex];
+
+                // 检查是否是插件负责的公司
+                const hasInclude = companyIds.includes(element.inquiry_record.company_id);
+                if (hasInclude) {
+                    console.log('随机选中的询料物料:', element);
+                    const { inquiry_record_id, id, material_code } = element;
+
+                    // 设置执行状态并跳转
+                    await chrome.storage.local.set({ executeGetSuppliersProcess: true });
+                    await sleep(2000);
+                    await chrome.runtime.sendMessage({
+                        action: "gotoJywSearchPage",
+                        inquiryRecordId: inquiry_record_id,
+                        inquiryMaterialId: id,
+                        searchValue: material_code,
+                        companyId: element.inquiry_record.company_id
+                    });
+                } else {
+                    logger.info('随机选中的询料物料不属于插件负责的公司');
+                }
+            } else {
+                logger.info('没有待采集的询料物料');
             }
+
         } catch (error) {
             logger.error('处理询料任务时发生错误:', error);
         }
