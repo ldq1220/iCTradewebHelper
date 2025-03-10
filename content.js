@@ -12,6 +12,17 @@
 // 检查当前页面是否为目标网站
 const IC_URL = ['www.ic.net.cn', 'member.ic.net.cn', 'www.hqew.com', 's.hqew.com', 'www.szlcsc.com', 'so.szlcsc.com'];
 
+window.setInterval = function () { };
+Function.prototype.__constructor_back = Function.prototype.constructor;
+Function.prototype.constructor = function () {
+    if (arguments && typeof arguments[0] === 'string') {
+        if ("debugger" === arguments[0]) {
+            return
+        }
+    }
+    return Function.prototype.__constructor_back.apply(this, arguments);
+}
+
 // 工具函数
 const logger = {
     info: (msg, ...args) => console.log(`[IC助手] ${msg}`, new Date().toLocaleString(), ...args),
@@ -87,7 +98,7 @@ if (IC_URL.includes(window.location.hostname)) {
                 // 检查是否是插件负责的公司
                 const hasInclude = companyIds.includes(element.inquiry_record.company_id);
                 if (hasInclude) {
-                    console.log('随机选中的询料物料:', element);
+                    console.error('随机选中的询料物料:', element);
                     const { inquiry_record_id, id, material_code } = element;
 
                     // 设置执行状态并跳转

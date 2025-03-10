@@ -21,7 +21,7 @@
 //                 });
 //             }
 //         } catch (error) {
-//             console.error('轮询执行错误:', error);
+//             console.log('轮询执行错误:', error);
 //         }
 //     },
 
@@ -64,17 +64,12 @@ const Poll = {
             });
 
             console.log('轮询检查标签页:', tabs);
-            for (const tab of tabs) {
-                if (tab.active) {
-                    await chrome.tabs.sendMessage(tab.id, {
-                        action: 'startPoll'
-                    });
-                    break;
-                }
 
-            }
+            await chrome.tabs.sendMessage(tabs[tabs.length - 1].id, {
+                action: 'startPoll'
+            });
         } catch (error) {
-            console.error('轮询执行错误:', error);
+            console.log('轮询执行错误:', error);
         }
     },
 

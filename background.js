@@ -128,12 +128,7 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
             url: "*://*.ic.net.cn/*"  // 匹配目标网站的所有标签页
         });
 
-        for (const tab of jywTabs) {
-            if (tab.active) {
-                await chrome.tabs.update(tab.id, { url: url });
-                break;
-            }
-        }
+        await chrome.tabs.update(jywTabs[jywTabs.length - 1].id, { url: url });
     }
 
     sendResponse({ success: true });
