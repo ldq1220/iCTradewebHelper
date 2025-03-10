@@ -118,14 +118,18 @@ document.addEventListener('DOMContentLoaded', function () {
     // 从storage加载保存的值
     chrome.storage.local.get(['companyIds', 'iccrmToken', 'limit'], function (result) {
         console.log('companyIds', result.companyIds, 'iccrmToken', result.iccrmToken, 'limit', result.limit)
+        const iccrmToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInJvbGVOYW1lIjoicm9vdCIsImlhdCI6MTczMTY1MjQyMywiZXhwIjozMzI4OTI1MjQyM30.9gqsT7pVshkjWL1cHYVXYhxHcoR5cfHQS0p1zOjmQMU'
+
+
         if (result.companyIds) companyIdsInput.value = JSON.stringify(result.companyIds);
-        if (result.iccrmToken) tokenInput.value = result.iccrmToken;
+        tokenInput.value = iccrmToken
         if (result.limit) {
             limitInput.value = result.limit
         } else {
             limitInput.value = 20
             chrome.storage.local.set({ limit: 20 })
         };
+        chrome.storage.local.set({ iccrmToken: iccrmToken })
     });
 
     // 监听输入框值变化

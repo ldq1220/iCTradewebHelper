@@ -118,15 +118,7 @@ if (IC_URL.includes(window.location.hostname)) {
 
         await chrome.storage.local.get(['executeGetSuppliersProcess'], async (result) => {
             if (result.executeGetSuppliersProcess) {
-                let suppliersResult = null
-
-                if (window.location.hostname.includes('ic.net.cn')) {
-                    suppliersResult = await getSuppliersProcessByJyw(); // 获取【交易网】供应商信息
-                } else if (window.location.hostname.includes('hqew.com')) {
-                    suppliersResult = await getSuppliersProcessByHqw(); // 获取【华强网】供应商信息
-                } else if (window.location.hostname.includes('szlcsc.com')) {
-                    suppliersResult = await getSuppliersProcessByLcsc(); // 获取【立创商城】供应商信息
-                }
+                let suppliersResult = await getSuppliersProcessByJyw(); // 获取【交易网】供应商信息
 
                 logger.info('获取供应商信息执行任务结果:', suppliersResult);
                 await chrome.storage.local.remove('executeGetSuppliersProcess');  // 执行后清除状态
