@@ -85,8 +85,8 @@ const ICCRMAPI = {
     },
 
     // 获取一条 待采集状态的 询料物料
-    async getInquiryMaterialByStatus(status, limit) {
-        return this.request(`/inquiry_materials:list?filter={"inquiry_material_status": "${status}"}&page=1&limit=${limit}&appends=inquiry_record`, {
+    async getInquiryMaterialByStatus(status, pageSize) {
+        return this.request(`/inquiry_materials:list?filter={"inquiry_material_status": "${status}"}&page=1&pageSize=${pageSize}&appends=inquiry_record`, {
             method: 'GET'
         });
     },
