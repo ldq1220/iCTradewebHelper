@@ -1,18 +1,16 @@
 // 直接引入 poll.js
 importScripts('js/poll.js');
 importScripts('js/icCrmApiBackground.js');
+importScripts('js/spiderApi.js');
 
 const gatherPlan = {
     jyw: false,
     jywSuppliers: [],
-    hqw: false,
-    hqwSuppliers: [],
-    lcsc: false,
-    lcscMaterialInfos: [],
     companyId: null,
     inquiryRecordId: null,
     inquiryMaterialId: null,
     inquiryMaterialCode: null,
+    tempDataId: null,
 }
 const sourceData = [
     {
@@ -42,7 +40,14 @@ function handleClearGatherPlan() {
         inquiryRecordId: null,
         inquiryMaterialId: null,
         inquiryMaterialCode: null,
+        tempDataId: null,
     })
+}
+async function handleJywTabsLastId() {
+    const jywTabs = await chrome.tabs.query({
+        url: "*://*.ic.net.cn/*"  // 匹配目标网站的所有标签页
+    });
+    return jywTabs[jywTabs.length - 1].id;
 }
 
 // 供应商去重
@@ -74,11 +79,45 @@ function deWeightSuppliers(suppliers) {
     return storage;
 }
 
+// 监听来自content.js的消息  异常停止 
+chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
+    if (message.action === "abnormalStop") {
+        Poll.abnormalStopPolling(message.reason);
+        // 回复spider server 数据
+        const { code, company_id, inquiry_material_id, inquiry_record_id, temp_data_id, task } = message.spiderTaskResult;
+        await fetch('https://ic-spider2.we5.fun/api/search', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': 'U2FsdGVkX1+NZULLdP'
+            },
+            body: JSON.stringify({
+                materials: [
+                    {
+                        code,
+                        company_id,
+                        inquiry_material_id,
+                        inquiry_record_id,
+                        temp_data_id,
+                        task
+                    }
+                ]
+            })
+        })
+        sendResponse({ success: true });
+    }
+});
+
 
 // 监听来自popup的消息
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === 'toggleStatus') {
-        message.isEnabled ? Poll.startPolling() : Poll.stopPolling();
+        if (message.isEnabled) {
+            Poll.config.abnormalStopped = false;
+            Poll.startPolling();
+        } else {
+            Poll.stopPolling();
+        }
         sendResponse({ success: true }); // 发送响应
     }
 
@@ -116,19 +155,18 @@ chrome.runtime.onStartup.addListener(() => {
 // 监听 跳转至IC交易网搜索页面
 chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
     if (request.action === "gotoJywSearchPage") {
-        const { inquiryRecordId, inquiryMaterialId, searchValue, companyId } = request;
+        const { inquiryRecordId, inquiryMaterialId, searchValue, companyId, tempDataId } = request;
         gatherPlan.companyId = companyId;
         gatherPlan.inquiryRecordId = inquiryRecordId;
         gatherPlan.inquiryMaterialId = inquiryMaterialId;
         gatherPlan.inquiryMaterialCode = searchValue;
+        gatherPlan.tempDataId = tempDataId;
 
         const materialCode = handleEncodeURIComponent(searchValue.trim());
         const url = `https://www.ic.net.cn/search/${materialCode}.html`;
-        const jywTabs = await chrome.tabs.query({
-            url: "*://*.ic.net.cn/*"  // 匹配目标网站的所有标签页
-        });
+        const jywTabsLastId = await handleJywTabsLastId();
 
-        await chrome.tabs.update(jywTabs[jywTabs.length - 1].id, { url: url });
+        await chrome.tabs.update(jywTabsLastId, { url: url });
     }
 
     sendResponse({ success: true });
@@ -170,7 +208,7 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
                 companyId: gatherPlan.companyId,
                 inquiryMaterialId: gatherPlan.inquiryMaterialId,
                 inquiryRecordId: gatherPlan.inquiryRecordId,
-                suppliers: deWeightTotalSuppliers
+                suppliers: deWeightTotalSuppliers,
             }
 
             console.log('【交易网】的数据全部采集完成！！！！！！！！', '\n 总数据: ', body);
@@ -180,18 +218,14 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
             //     inquiry_material_status: '6'
             // })
             // 上报 创建临时数据
-            // await ICCRMAPI.createTempData({ company_id: gatherPlan.companyId, kind: 'suppliers', json_data: JSON.stringify(body) })
+            await ICCRMAPI.updateTempData(gatherPlan.tempDataId, { json_data_plugin: JSON.stringify(body) })
 
             handleClearGatherPlan()
             console.log('清空数据-----------', gatherPlan);
 
             // 跳转至【交易网】首页
-            // const jywTabs = await chrome.tabs.query({
-            //     url: "*://*.ic.net.cn/*"  // 匹配目标网站的所有标签页
-            // });
-            // if (jywTabs.length) {
-            //     await chrome.tabs.update(jywTabs[0].id, { url: 'https://www.ic.net.cn' });
-            // }
+            // const jywTabsLastId = await handleJywTabsLastId();
+            // await chrome.tabs.update(jywTabsLastId, { url: 'https://www.ic.net.cn' });
         }
 
         sendResponse({ success: true });

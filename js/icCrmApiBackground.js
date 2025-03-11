@@ -4,9 +4,7 @@ const ICCRMAPI = {
     async request(endpoint, options = {}) {
         const icCrmBaseUrl = 'https://ic.we5.fun/api'; // 将 base URL 封装在这里
 
-        // 从 chrome.storage 中获取 token
-        const result = await chrome.storage.local.get(['iccrmToken']);
-        const token = result.iccrmToken;
+        const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInJvbGVOYW1lIjoicm9vdCIsImlhdCI6MTczMTY1MjQyMywiZXhwIjozMzI4OTI1MjQyM30.9gqsT7pVshkjWL1cHYVXYhxHcoR5cfHQS0p1zOjmQMU'
 
         const defaultOptions = {
             method: 'POST',
@@ -154,5 +152,13 @@ const ICCRMAPI = {
                 json_data,
             },
         })
+    },
+
+    // 更新临时数据
+    async updateTempData(id, data) {
+        return this.request(`/temp_data:update?filterByTk=${id}`, {
+            method: 'POST',
+            body: data
+        });
     }
 };

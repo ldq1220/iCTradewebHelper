@@ -1,73 +1,55 @@
-// const Poll = {
-//     // 轮询配置
-//     config: {
-//         interval: 30,
-//         timer: null
-//     },
-
-//     // 轮询处理函数
-//     async pollHandler() {
-//         try {
-//             // 检查当前是否在目标网站
-//             const tabs = await chrome.tabs.query({
-//                 url: "*://*.ic.net.cn/*"  // 匹配【交易网】所有标签页
-//                 // url: "*://*.hqew.com/*"  // 匹配【华强网】所有标签页
-//                 // url: "*://*.szlcsc.com/*"  // 匹配【立创商城】所有标签页
-//             });
-//             console.log('tabs-----', tabs);
-//             if (tabs.length) {
-//                 await chrome.tabs.sendMessage(tabs[0].id, {
-//                     action: 'startPoll'
-//                 });
-//             }
-//         } catch (error) {
-//             console.log('轮询执行错误:', error);
-//         }
-//     },
-
-//     // 启动轮询
-//     startPolling() {
-//         if (!this.config.timer) {
-//             // 立即执行一次
-//             this.pollHandler();
-//             // 设置定时器
-//             this.config.timer = setInterval(() => {
-//                 this.pollHandler();
-//             }, this.config.interval * 1000);
-//         }
-//     },
-
-//     // 停止轮询
-//     stopPolling() {
-//         if (this.config.timer) {
-//             clearInterval(this.config.timer);
-//             this.config.timer = null;
-//         }
-//     }
-// };
-// 
-
 const Poll = {
     // 轮询配置
     config: {
-        interval: 30, // 间隔时间（秒）
+        interval: 10, // 间隔时间（秒）
         timerActive: false,
-        alarmName: 'pollAlarm'
+        alarmName: 'pollAlarm',
+        resumeTimer: null, // 恢复轮询的定时器
+        minPauseTime: 5, // 最小暂停时间(秒)
+        maxPauseTime: 10, // 最大暂停时间(秒)
+        abnormalStopped: false, // 异常停止轮询  // 触发易盾 未登录
     },
 
     // 轮询处理函数
     async pollHandler() {
         try {
+            await chrome.storage.local.set({ lastPollTime: new Date().toLocaleString() });
+            chrome.runtime.sendMessage({
+                action: "updateLastRunTime",
+            });
+
             // 检查当前是否在目标网站
             const tabs = await chrome.tabs.query({
                 url: "*://*.ic.net.cn/*"  // 匹配【交易网】所有标签页
             });
 
-            console.log('轮询检查标签页:', tabs);
+            console.log('交易网标签页:', tabs);
 
-            await chrome.tabs.sendMessage(tabs[tabs.length - 1].id, {
-                action: 'startPoll'
-            });
+            const spiderTaskResult = await SpiderApi.getSpliderTask();
+            console.log('获取任务:', spiderTaskResult);
+
+            if (spiderTaskResult && spiderTaskResult.code) {
+                // 停止当前轮询
+                this.stopPolling();
+
+                // 发送消息处理物料通知
+                await chrome.tabs.sendMessage(tabs[tabs.length - 1].id, {
+                    action: 'startPoll',
+                    spiderTaskResult: spiderTaskResult
+                });
+
+                // 随机暂停60-120秒后恢复轮询
+                const pauseTime = Math.floor(Math.random() *
+                    (this.config.maxPauseTime - this.config.minPauseTime + 1) +
+                    this.config.minPauseTime) * 1000;
+
+                console.log(`将在 ${pauseTime / 1000} 秒后恢复轮询`);
+                this.config.resumeTimer = setTimeout(async () => {
+                    this.startPolling();
+                }, pauseTime);
+            } else {
+                console.log('没有需要采集的询料物料');
+            }
         } catch (error) {
             console.log('轮询执行错误:', error);
         }
@@ -93,28 +75,42 @@ const Poll = {
     // 启动轮询
     startPolling() {
         // 确保监听器已初始化
-        if (!this._alarmListener) {
+        if (!this._alarmListener && !this.config.abnormalStopped) {
             this.initAlarmListener();
         }
 
         // 立即执行一次
-        if (!this.config.timerActive) {
+        if (!this.config.timerActive && !this.config.abnormalStopped) {
             this.pollHandler();
             this.config.timerActive = true;
             // 创建定时任务
-            chrome.alarms.create(this.config.alarmName, {
+            chrome.alarms?.create(this.config.alarmName, {
                 periodInMinutes: this.config.interval / 60
             });
-
         }
+    },
 
-        console.log(`轮询已启动，间隔: ${this.config.interval}秒`);
+    // 异常停止轮询
+    abnormalStopPolling(reason) {
+        this.config.abnormalStopped = true;
+        this.stopPolling();
+
+        // 关闭开关
+        chrome.storage.local.set({ isEnabled: false });
+        chrome.runtime.sendMessage({
+            action: "updatePopupSwitch",
+            enabled: false,
+            reason: reason
+        });
+
+        console.log('异常停止所有轮询: ----', reason);
     },
 
     // 停止轮询
     stopPolling() {
-        chrome.alarms.clear(this.config.alarmName);
+        chrome.alarms?.clear(this.config.alarmName);
         this.config.timerActive = false;
-        console.log('轮询已停止');
+        clearTimeout(this.config.resumeTimer);
+        this.config.resumeTimer = null;
     }
 };

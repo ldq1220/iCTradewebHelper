@@ -26,6 +26,7 @@
             "js": [
                 "js/utils.js",
                 "js/icCrmApiBackground.js",
+                "js/spiderApi.js",
                 "js/poll.js",
                 "js/getSuppliersProcessByJyw.js",
                 "js/getSuppliersProcessByHqw.js",

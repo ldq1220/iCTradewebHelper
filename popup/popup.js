@@ -94,6 +94,55 @@ async function handleInputChange() {
     }
 }
 
+function updateStatus(isEnabled, reason = '已停止') {
+    const statusIcon = document.querySelector('.status-icon');
+    const statusText = document.querySelector('.status-text');
+    const companyIdsInput = document.getElementById('companyIds');
+    const tokenInput = document.getElementById('token');
+    const limitInput = document.getElementById('limit');
+
+    if (isEnabled) {
+        statusIcon.classList.add('active');
+        statusIcon.classList.remove('inactive');
+        statusText.classList.add('active');
+        statusText.classList.remove('inactive');
+        statusText.textContent = '正在运行';
+        // 禁用输入框
+        companyIdsInput.disabled = true;
+        tokenInput.disabled = true;
+        limitInput.disabled = true;
+    } else {
+        statusIcon.classList.remove('active');
+        statusIcon.classList.add('inactive');
+        statusText.classList.remove('active');
+        statusText.classList.add('inactive');
+        statusText.textContent = reason;
+        // 启用输入框
+        companyIdsInput.disabled = false;
+        tokenInput.disabled = false;
+        limitInput.disabled = false;
+    }
+}
+
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.action === "updatePopupSwitch") {
+        const switchElement = document.getElementById('statusToggle');
+        if (switchElement) {
+            switchElement.checked = message.enabled;
+            updateStatus(message.enabled, message.reason);
+        }
+    }
+});
+
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.action === "updateLastRunTime") {
+        console.log('updateLastRunTime============================', message)
+        updateLastRunTime();
+    }
+});
+
+
+
 document.addEventListener('DOMContentLoaded', function () {
     // 更新上次运行时间
     updateLastRunTime();
@@ -109,8 +158,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // 获取DOM元素
     const statusToggle = document.getElementById('statusToggle');
-    const statusIcon = document.querySelector('.status-icon');
-    const statusText = document.querySelector('.status-text');
     const companyIdsInput = document.getElementById('companyIds');
     const tokenInput = document.getElementById('token');
     const limitInput = document.getElementById('limit');
@@ -119,7 +166,6 @@ document.addEventListener('DOMContentLoaded', function () {
     chrome.storage.local.get(['companyIds', 'iccrmToken', 'limit'], function (result) {
         console.log('companyIds', result.companyIds, 'iccrmToken', result.iccrmToken, 'limit', result.limit)
         const iccrmToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInJvbGVOYW1lIjoicm9vdCIsImlhdCI6MTczMTY1MjQyMywiZXhwIjozMzI4OTI1MjQyM30.9gqsT7pVshkjWL1cHYVXYhxHcoR5cfHQS0p1zOjmQMU'
-
 
         if (result.companyIds) companyIdsInput.value = JSON.stringify(result.companyIds);
         tokenInput.value = iccrmToken
@@ -187,30 +233,6 @@ document.addEventListener('DOMContentLoaded', function () {
             console.log('background响应:', response); // 调试日志
         });
     });
-
-    function updateStatus(isEnabled) {
-        if (isEnabled) {
-            statusIcon.classList.add('active');
-            statusIcon.classList.remove('inactive');
-            statusText.classList.add('active');
-            statusText.classList.remove('inactive');
-            statusText.textContent = '正在运行';
-            // 禁用输入框
-            companyIdsInput.disabled = true;
-            tokenInput.disabled = true;
-            limitInput.disabled = true;
-        } else {
-            statusIcon.classList.remove('active');
-            statusIcon.classList.add('inactive');
-            statusText.classList.remove('active');
-            statusText.classList.add('inactive');
-            statusText.textContent = '已停止';
-            // 启用输入框
-            companyIdsInput.disabled = false;
-            tokenInput.disabled = false;
-            limitInput.disabled = false;
-        }
-    }
 });
 
 

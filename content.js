@@ -34,6 +34,41 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+// NTFY通知
+function sendNtfy(msg) {
+    // fetch('https://ntfy.we5.fun/prod_gemel', {
+    fetch('https://ntfy.we5.fun/test_gemel', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'text/plain'
+        },
+        body: msg
+    })
+}
+// Lucy机器人通知
+function lucySendMessage(msg) {
+    fetch('https://api.gemelai.com/api/open/chat/send', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'x-app-api-key': xAppApiKey,
+        },
+        body: {
+            batchId: 'IC采集助手消息通知',
+            platform: '',
+            fromUserId: '',
+            type: true ? 'private_message' : 'group_message',
+            groupId: '',
+            toUserIds: [''],
+            messages: [
+                {
+                    contentType: 'text',
+                    content: '',
+                },
+            ],
+        }
+    })
+}
 
 if (IC_URL.includes(window.location.hostname)) {
     // 获取URL中的查询参数
@@ -50,21 +85,41 @@ if (IC_URL.includes(window.location.hostname)) {
         if (message.action === 'startPoll') {
             (async () => {
                 try {
-                    logger.info('开始轮询');
                     // 存储当前时间
                     await chrome.storage.local.set({ lastPollTime: new Date().toLocaleString() });
+
+                    // 检查是否处于未登录状态
                     const hasLogin = window.location.href.includes('login.php')
                     if (hasLogin) {
-                        logger.info('IC交易网处于未登录状态');
                         sendResponse({ success: false, error: '未登录状态' });
+                        chrome.runtime.sendMessage({
+                            action: "abnormalStop",
+                            reason: "交易网未登录状态",
+                            spiderTaskResult: message.spiderTaskResult
+                        });
+                        sendNtfy('【浏览器IC采集助手插件】：IC交易网处于未登录状态，插件停止运行！！！');
                         return;
                     }
+
+                    // 检查是否触发易盾
+                    const hasYidun = window.location.href.includes('searchPnCode.php')
+                    if (hasYidun) {
+                        sendResponse({ success: false, error: '触发易盾' });
+                        chrome.runtime.sendMessage({
+                            action: "abnormalStop",
+                            reason: "触发易盾",
+                            spiderTaskResult: message.spiderTaskResult
+                        });
+                        sendNtfy('【浏览器IC采集助手插件】：IC交易网触发易盾，插件停止运行！！！');
+                        return;
+                    }
+
                     // 通知background.js 先清空数据
                     if (window.location.hostname.includes('ic.net.cn')) {
                         chrome.runtime.sendMessage({ action: "clearGatherPlan" });
                     }
 
-                    await handleInquiryTask(); // 等待异步任务完成
+                    await handleInquiryTask(message.spiderTaskResult); // 等待异步任务完成
                     sendResponse({ success: true });
                 } catch (error) {
                     logger.error('轮询过程发生错误:', error);
@@ -81,42 +136,23 @@ if (IC_URL.includes(window.location.hostname)) {
 
 
     // 处理询料任务
-    async function handleInquiryTask() {
+    async function handleInquiryTask(spiderTaskResult) {
         try {
             // 先清除上一次的状态
             await chrome.storage.local.remove('executeGetSuppliersProcess');
-            const { companyIds } = await chrome.storage.local.get(['companyIds']);
+            const { code, company_id, inquiry_material_id, inquiry_record_id, temp_data_id } = spiderTaskResult;
 
-            const { limit } = await chrome.storage.local.get(['limit']);
-            const inquiryMaterialResult = await ICCRMAPI.getInquiryMaterialByStatus("0", limit) // 获取待采集状态的询料任务
-
-            // 随机选择一个询料物料
-            if (inquiryMaterialResult.length > 0) {
-                const randomIndex = Math.floor(Math.random() * inquiryMaterialResult.length);
-                const element = inquiryMaterialResult[randomIndex];
-
-                // 检查是否是插件负责的公司
-                const hasInclude = companyIds.includes(element.inquiry_record.company_id);
-                if (hasInclude) {
-                    console.error('随机选中的询料物料:', element);
-                    const { inquiry_record_id, id, material_code } = element;
-
-                    // 设置执行状态并跳转
-                    await chrome.storage.local.set({ executeGetSuppliersProcess: true });
-                    await sleep(2000);
-                    await chrome.runtime.sendMessage({
-                        action: "gotoJywSearchPage",
-                        inquiryRecordId: inquiry_record_id,
-                        inquiryMaterialId: id,
-                        searchValue: material_code,
-                        companyId: element.inquiry_record.company_id
-                    });
-                } else {
-                    logger.info('随机选中的询料物料不属于插件负责的公司');
-                }
-            } else {
-                logger.info('没有待采集的询料物料');
-            }
+            // 设置执行状态并跳转
+            await chrome.storage.local.set({ executeGetSuppliersProcess: true });
+            await sleep(2000);
+            await chrome.runtime.sendMessage({
+                action: "gotoJywSearchPage",
+                inquiryRecordId: inquiry_record_id,
+                inquiryMaterialId: inquiry_material_id,
+                searchValue: code,
+                companyId: company_id,
+                tempDataId: temp_data_id
+            });
 
         } catch (error) {
             logger.error('处理询料任务时发生错误:', error);
