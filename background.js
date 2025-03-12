@@ -219,8 +219,8 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
             console.log('清空数据-----------', gatherPlan);
 
             // 跳转至【交易网】首页
-            // const jywTabsLastId = await handleJywTabsLastId();
-            // await chrome.tabs.update(jywTabsLastId, { url: 'https://www.ic.net.cn' });
+            const jywTabsLastId = await handleJywTabsLastId();
+            await chrome.tabs.update(jywTabsLastId, { url: 'https://www.ic.net.cn' });
         }
 
         sendResponse({ success: true });
