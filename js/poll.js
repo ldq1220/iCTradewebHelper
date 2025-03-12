@@ -1,13 +1,21 @@
 const Poll = {
+
     // 轮询配置
     config: {
-        interval: 10, // 间隔时间（秒）
+        interval: 5, // 间隔时间（秒）
         timerActive: false,
         alarmName: 'pollAlarm',
         resumeTimer: null, // 恢复轮询的定时器
-        minPauseTime: 5, // 最小暂停时间(秒)
-        maxPauseTime: 10, // 最大暂停时间(秒)
+        minPauseTime: 60, // 最小暂停时间(秒)
+        maxPauseTime: 120, // 最大暂停时间(秒)
         abnormalStopped: false, // 异常停止轮询  // 触发易盾 未登录
+    },
+
+    async loadConfig() {
+        const result = await chrome.storage.local.get(['loopSecond', 'minPauseTime', 'maxPauseTime']);
+        this.config.interval = result.loopSecond;
+        this.config.minPauseTime = result.minPauseTime;
+        this.config.maxPauseTime = result.maxPauseTime;
     },
 
     // 轮询处理函数
@@ -61,8 +69,9 @@ const Poll = {
         chrome.alarms?.onAlarm?.removeListener(this._alarmListener);
 
         // 定义监听器函数
-        this._alarmListener = (alarm) => {
+        this._alarmListener = async (alarm) => {
             if (alarm.name === this.config.alarmName) {
+                await this.loadConfig();
                 console.log('触发轮询:', new Date().toLocaleString());
                 this.pollHandler();
             }
@@ -73,7 +82,11 @@ const Poll = {
     },
 
     // 启动轮询
-    startPolling() {
+    async startPolling() {
+        // 加载配置
+        await this.loadConfig();
+        console.log('启动轮询', new Date().toLocaleString(), '轮询配置:', this.config);
+
         // 确保监听器已初始化
         if (!this._alarmListener && !this.config.abnormalStopped) {
             this.initAlarmListener();
@@ -112,5 +125,6 @@ const Poll = {
         this.config.timerActive = false;
         clearTimeout(this.config.resumeTimer);
         this.config.resumeTimer = null;
+        console.log('停止轮询', new Date().toLocaleString());
     }
 };

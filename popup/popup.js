@@ -14,76 +14,74 @@ function updateCurrentTime() {
 
 // 验证和显示错误信息
 function validateInputs() {
-    const companyIds = document.getElementById('companyIds').value.trim();
-    const token = document.getElementById('token').value.trim();
-    const limit = document.getElementById('limit').value.trim();
-    const idsError = document.getElementById('idsError');
-    const tokenError = document.getElementById('tokenError');
-    const limitError = document.getElementById('limitError');
+    const validationRules = [
+        {
+            field: 'environment',
+            errorId: 'environmentError',
+            validate: value => !!value.trim(),
+            errorMessage: '环境名不能为空'
+        },
+        {
+            field: 'account',
+            errorId: 'accountError',
+            validate: value => !!value.trim(),
+            errorMessage: '账号不能为空'
+        },
+        {
+            field: 'password',
+            errorId: 'passwordError',
+            validate: value => !!value.trim(),
+            errorMessage: '密码不能为空'
+        }
+    ];
+
     let isValid = true;
 
-    // 验证token
-    if (!token) {
-        tokenError.textContent = 'Token不能为空';
-        isValid = false;
-    } else {
-        tokenError.textContent = '';
-    }
+    // 遍历验证每个字段
+    validationRules.forEach(rule => {
+        const value = document.getElementById(rule.field).value.trim();
+        const errorElement = document.getElementById(rule.errorId);
 
-    // 验证公司IDs
-    if (!companyIds) {
-        idsError.textContent = '公司Ids不能为空';
-        isValid = false;
-    } else {
-        try {
-            const ids = JSON.parse(companyIds);
-            if (!Array.isArray(ids)) {
-                idsError.textContent = '请输入正确的数组格式';
-                isValid = false;
-            } else if (ids.length === 0) {
-                idsError.textContent = '数组不能为空';
-                isValid = false;
-            } else {
-                idsError.textContent = '';
-            }
-        } catch (e) {
-            idsError.textContent = '请输入正确的数组格式';
+        if (!rule.validate(value)) {
+            errorElement.textContent = rule.errorMessage;
             isValid = false;
+        } else {
+            errorElement.textContent = '';
         }
-    }
-
-    // 验证limit
-    if (!limit) {
-        limitError.textContent = '数量不能为空';
-        isValid = false;
-    } else {
-        limitError.textContent = '';
-    }
+    });
 
     return isValid;
 }
 
 // 保存配置到storage
 async function saveConfig() {
-    const companyIds = document.getElementById('companyIds').value.trim();
-    const token = document.getElementById('token').value.trim();
-    const limit = document.getElementById('limit').value.trim();
+    const environment = document.getElementById('environment').value.trim();
+    const account = document.getElementById('account').value.trim();
+    const password = document.getElementById('password').value.trim();
+    const loopSecond = Number(document.getElementById('loopSecond').value);
+    const minPauseTime = Number(document.getElementById('minPauseTime').value);
+    const maxPauseTime = Number(document.getElementById('maxPauseTime').value);
+
     try {
-        // 尝试解析公司IDs
-        const ids = JSON.parse(companyIds);
-        if (!Array.isArray(ids)) {
-            return false;
-        }
         // 保存配置
         await chrome.storage.local.set({
-            companyIds: ids,
-            iccrmToken: token,
-            limit: limit
+            environment: environment,
+            account: account,
+            password: password,
+            loopSecond: loopSecond,
+            minPauseTime: minPauseTime,
+            maxPauseTime: maxPauseTime
         });
-        return true;
+        console.log('保存配置成功:', {
+            environment,
+            account,
+            password,
+            loopSecond,
+            minPauseTime,
+            maxPauseTime
+        });
     } catch (e) {
         console.error('保存配置失败:', e);
-        return false;
     }
 }
 
@@ -95,33 +93,31 @@ async function handleInputChange() {
 }
 
 function updateStatus(isEnabled, reason = '已停止') {
-    const statusIcon = document.querySelector('.status-icon');
-    const statusText = document.querySelector('.status-text');
-    const companyIdsInput = document.getElementById('companyIds');
-    const tokenInput = document.getElementById('token');
-    const limitInput = document.getElementById('limit');
+    // 状态相关的元素
+    const statusElements = {
+        icon: document.querySelector('.status-icon'),
+        text: document.querySelector('.status-text')
+    };
 
-    if (isEnabled) {
-        statusIcon.classList.add('active');
-        statusIcon.classList.remove('inactive');
-        statusText.classList.add('active');
-        statusText.classList.remove('inactive');
-        statusText.textContent = '正在运行';
-        // 禁用输入框
-        companyIdsInput.disabled = true;
-        tokenInput.disabled = true;
-        limitInput.disabled = true;
-    } else {
-        statusIcon.classList.remove('active');
-        statusIcon.classList.add('inactive');
-        statusText.classList.remove('active');
-        statusText.classList.add('inactive');
-        statusText.textContent = reason;
-        // 启用输入框
-        companyIdsInput.disabled = false;
-        tokenInput.disabled = false;
-        limitInput.disabled = false;
-    }
+    // 需要控制的输入框
+    const inputFields = ['environment', 'account', 'password', 'loopSecond', 'minPauseTime', 'maxPauseTime'].map(
+        id => document.getElementById(id)
+    );
+
+    // 更新状态样式
+    ['icon', 'text'].forEach(element => {
+        const el = statusElements[element];
+        el.classList.toggle('active', isEnabled);
+        el.classList.toggle('inactive', !isEnabled);
+    });
+
+    // 更新状态文本
+    statusElements.text.textContent = isEnabled ? '正在运行' : reason;
+
+    // 更新输入框状态
+    inputFields.forEach(input => {
+        input.disabled = isEnabled;
+    });
 }
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -136,11 +132,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === "updateLastRunTime") {
-        console.log('updateLastRunTime============================', message)
         updateLastRunTime();
     }
 });
-
 
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -158,30 +152,36 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // 获取DOM元素
     const statusToggle = document.getElementById('statusToggle');
-    const companyIdsInput = document.getElementById('companyIds');
-    const tokenInput = document.getElementById('token');
-    const limitInput = document.getElementById('limit');
-
-    // 从storage加载保存的值
-    chrome.storage.local.get(['companyIds', 'iccrmToken', 'limit'], function (result) {
-        console.log('companyIds', result.companyIds, 'iccrmToken', result.iccrmToken, 'limit', result.limit)
-        const iccrmToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInJvbGVOYW1lIjoicm9vdCIsImlhdCI6MTczMTY1MjQyMywiZXhwIjozMzI4OTI1MjQyM30.9gqsT7pVshkjWL1cHYVXYhxHcoR5cfHQS0p1zOjmQMU'
-
-        if (result.companyIds) companyIdsInput.value = JSON.stringify(result.companyIds);
-        tokenInput.value = iccrmToken
-        if (result.limit) {
-            limitInput.value = result.limit
-        } else {
-            limitInput.value = 20
-            chrome.storage.local.set({ limit: 20 })
-        };
-        chrome.storage.local.set({ iccrmToken: iccrmToken })
-    });
+    const environmentInput = document.getElementById('environment');
+    const accountInput = document.getElementById('account');
+    const passwordInput = document.getElementById('password');
+    const loopSecondInput = document.getElementById('loopSecond');
+    const minPauseTimeInput = document.getElementById('minPauseTime');
+    const maxPauseTimeInput = document.getElementById('maxPauseTime');
 
     // 监听输入框值变化
-    companyIdsInput.addEventListener('change', handleInputChange);
-    tokenInput.addEventListener('change', handleInputChange);
-    limitInput.addEventListener('change', handleInputChange);
+    environmentInput.addEventListener('change', handleInputChange);
+    accountInput.addEventListener('change', handleInputChange);
+    passwordInput.addEventListener('change', handleInputChange);
+    loopSecondInput.addEventListener('change', handleInputChange);
+    minPauseTimeInput.addEventListener('change', handleInputChange);
+    maxPauseTimeInput.addEventListener('change', handleInputChange);
+
+    // 从storage加载保存的值
+    chrome.storage.local.get(['environment', 'account', 'password', 'loopSecond', 'minPauseTime', 'maxPauseTime'], function (result) {
+        console.log('从storage加载保存的值--------------', result)
+        if (result.environment) environmentInput.value = result.environment
+        if (result.account) accountInput.value = result.account
+        if (result.password) passwordInput.value = result.password
+
+        loopSecondInput.value = result.loopSecond ? Number(result.loopSecond) : 5;
+        minPauseTimeInput.value = result.minPauseTime ? Number(result.minPauseTime) : 60;
+        maxPauseTimeInput.value = result.maxPauseTime ? Number(result.maxPauseTime) : 120;
+
+        if (!result.loopSecond) chrome.storage.local.set({ loopSecond: 5 });
+        if (!result.minPauseTime) chrome.storage.local.set({ minPauseTime: 60 });
+        if (!result.maxPauseTime) chrome.storage.local.set({ maxPauseTime: 120 });
+    });
 
     /********************** 插件状态开关 *********************/
     // 从 storage 获取当前状态并初始化

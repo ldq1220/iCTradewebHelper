@@ -10,7 +10,7 @@ const ICCRMAPI = {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}` // 使用从 storage 中获取的 token
+                'Authorization': `Bearer ${token}`
             },
             // 默认超时时间 30 秒
             timeout: 30000
@@ -43,7 +43,6 @@ const ICCRMAPI = {
 
             if (!response.ok) {
                 if (response.status == 403) {
-                    await chrome.storage.local.remove(['token', 'user']);  // 清除登录信息
                     chrome.runtime.sendMessage({ action: 'loginExpired' });  // 通知background脚本登录已过期
                     alert('IC助手Token错误，No permission')
                     throw new Error(`IC助手，登录态过期。请重新登录。HTTP status: ${response.status}`);

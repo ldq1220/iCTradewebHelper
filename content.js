@@ -36,8 +36,8 @@ function sleep(ms) {
 
 // NTFY通知
 function sendNtfy(msg) {
-    // fetch('https://ntfy.we5.fun/prod_gemel', {
-    fetch('https://ntfy.we5.fun/test_gemel', {
+    fetch('https://ntfy.we5.fun/prod_gemel', {
+        // fetch('https://ntfy.we5.fun/test_gemel', {   
         method: 'POST',
         headers: {
             'Content-Type': 'text/plain'
@@ -87,6 +87,7 @@ if (IC_URL.includes(window.location.hostname)) {
                 try {
                     // 存储当前时间
                     await chrome.storage.local.set({ lastPollTime: new Date().toLocaleString() });
+                    const result = await chrome.storage.local.get(['environment', 'account']);
 
                     // 检查是否处于未登录状态
                     const hasLogin = window.location.href.includes('login.php')
@@ -97,7 +98,7 @@ if (IC_URL.includes(window.location.hostname)) {
                             reason: "交易网未登录状态",
                             spiderTaskResult: message.spiderTaskResult
                         });
-                        sendNtfy('【浏览器IC采集助手插件】：IC交易网处于未登录状态，插件停止运行！！！');
+                        sendNtfy(`【浏览器IC采集助手插件】：IC交易网处于未登录状态，插件停止运行！！！ , 环境名：${result.environment} , 账号：${result.account}`);
                         return;
                     }
 
@@ -110,7 +111,7 @@ if (IC_URL.includes(window.location.hostname)) {
                             reason: "触发易盾",
                             spiderTaskResult: message.spiderTaskResult
                         });
-                        sendNtfy('【浏览器IC采集助手插件】：IC交易网触发易盾，插件停止运行！！！');
+                        sendNtfy(`【浏览器IC采集助手插件】：IC交易网触发易盾，插件停止运行！！！ , 环境名：${result.environment} , 账号：${result.account}`);
                         return;
                     }
 

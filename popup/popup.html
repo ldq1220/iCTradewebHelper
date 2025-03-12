@@ -18,22 +18,40 @@
         <div class="content" id="content">
             <!-- 配置输入 -->
             <div class="config-card">
-                <div class="input-group">
-                    <label for="companyIds">公司IDs:</label>
-                    <input type="text" id="companyIds" placeholder="请输入公司ID数组">
-                    <span class="error-text" id="idsError"></span>
+                <div class="config-card-row">
+                    <div class="input-group">
+                        <label for="environment">环境名:</label>
+                        <input type="text" id="environment" placeholder="请输入环境名">
+                        <span class="error-text" id="environmentError"></span>
+                    </div>
+                    <div class="input-group">
+                        <label for="account">账号:</label>
+                        <input type="text" id="account" placeholder="请输入账号">
+                        <span class="error-text" id="accountError"></span>
+                    </div>
+                    <div class="input-group">
+                        <label for="password">密码:</label>
+                        <input type="password" id="password" placeholder="请输入密码">
+                        <span class="error-text" id="passwordError"></span>
+                    </div>
                 </div>
-                <div class="input-group">
-                    <label for="token">Token:</label>
-                    <input type="password" id="token" placeholder="请输入token">
-                    <span class="error-text" id="tokenError"></span>
-                </div>
-                <div class="input-group">
-                    <label for="limit">Limit:</label>
-                    <input type="number" id="limit" placeholder="数量">
-                    <span class="error-text" id="limitError"></span>
+
+                <div class="config-card-row">
+                    <div class="input-group">
+                        <label for="loopSecond">循环时间s:</label>
+                        <input type="number" id="loopSecond" placeholder="请输入循环秒数">
+                    </div>
+                    <div class="input-group">
+                        <label for="minPauseTime">最小暂停时间s:</label>
+                        <input type="number" id="minPauseTime" placeholder="请输入最小暂停时间">
+                    </div>
+                    <div class="input-group">
+                        <label for="maxPauseTime">最大暂停时间s:</label>
+                        <input type="number" id="maxPauseTime" placeholder="请输入最大暂停时间">
+                    </div>
                 </div>
             </div>
+
 
             <!-- 插件Container -->
             <div class="status-card">
@@ -76,7 +94,7 @@
         </div>
 
         <footer class="footer">
-            <span>版本 1.0.0</span>
+            <span>版本 1.0.1</span>
         </footer>
     </div>
     <script src="popup.js"></script>

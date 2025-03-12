@@ -85,25 +85,28 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
         Poll.abnormalStopPolling(message.reason);
         // 回复spider server 数据
         const { code, company_id, inquiry_material_id, inquiry_record_id, temp_data_id, task } = message.spiderTaskResult;
-        await fetch('https://ic-spider2.we5.fun/api/search', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-api-key': 'U2FsdGVkX1+NZULLdP'
-            },
-            body: JSON.stringify({
-                materials: [
-                    {
-                        code,
-                        company_id,
-                        inquiry_material_id,
-                        inquiry_record_id,
-                        temp_data_id,
-                        task
-                    }
-                ]
+        if (code) {
+            await fetch('https://ic-spider2.we5.fun/api/search', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-api-key': 'U2FsdGVkX1+NZULLdP'
+                },
+                body: JSON.stringify({
+                    materials: [
+                        {
+                            code,
+                            company_id,
+                            inquiry_material_id,
+                            inquiry_record_id,
+                            temp_data_id,
+                            task
+                        }
+                    ]
+                })
             })
-        })
+        }
+
         sendResponse({ success: true });
     }
 });
@@ -119,14 +122,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             Poll.stopPolling();
         }
         sendResponse({ success: true }); // 发送响应
-    }
-
-    // 插件 登录过期的消息
-    if (message.action === 'loginExpired') {
-        stopTask(); // 停止当前运行的任务
-        isEnabled = false; // 设置启用状态为 false
-        chrome.storage.local.set({ isEnabled: false }); // 更新存储中的状态
-        sendResponse({ success: true });
     }
 
     return true; // 保持消息通道开启
@@ -162,7 +157,7 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
         gatherPlan.inquiryMaterialCode = searchValue;
         gatherPlan.tempDataId = tempDataId;
 
-        const materialCode = handleEncodeURIComponent(searchValue.trim());
+        const materialCode = handleEncodeURIComponent(searchValue?.trim());
         const url = `https://www.ic.net.cn/search/${materialCode}.html`;
         const jywTabsLastId = await handleJywTabsLastId();
 
