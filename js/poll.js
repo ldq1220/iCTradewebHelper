@@ -6,8 +6,8 @@ const Poll = {
         timerActive: false,
         alarmName: 'pollAlarm',
         resumeTimer: null, // 恢复轮询的定时器
-        minPauseTime: 60, // 最小暂停时间(秒)
-        maxPauseTime: 120, // 最大暂停时间(秒)
+        minPauseTime: 30, // 最小暂停时间(秒)
+        maxPauseTime: 60, // 最大暂停时间(秒)
         abnormalStopped: false, // 异常停止轮询  // 触发易盾 未登录
     },
 

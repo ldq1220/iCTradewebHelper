@@ -82,7 +82,7 @@ window.getSuppliersProcessByHqw = function () {
                         AElementAll.forEach(element => {
                             const childElements = element.children;
                             Array.from(childElements).forEach(child => {
-                                const className = child.className;
+                                const className = child?.className;
                                 if (className) elementData.companyTag.push(className);
                             });
                         });
@@ -100,7 +100,7 @@ window.getSuppliersProcessByHqw = function () {
                     console.log('materialTagsElement', materialTagsElement);
 
                     if (materialTagsElement) {
-                        const tagClassName = materialTagsElement.querySelector('i').className;
+                        const tagClassName = materialTagsElement.querySelector('i')?.className;
                         if (tagClassName) elementData.materialTags.push(tagClassName);
                     }
 

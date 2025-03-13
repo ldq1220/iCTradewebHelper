@@ -175,12 +175,12 @@ document.addEventListener('DOMContentLoaded', function () {
         if (result.password) passwordInput.value = result.password
 
         loopSecondInput.value = result.loopSecond ? Number(result.loopSecond) : 5;
-        minPauseTimeInput.value = result.minPauseTime ? Number(result.minPauseTime) : 60;
-        maxPauseTimeInput.value = result.maxPauseTime ? Number(result.maxPauseTime) : 120;
+        minPauseTimeInput.value = result.minPauseTime ? Number(result.minPauseTime) : 30;
+        maxPauseTimeInput.value = result.maxPauseTime ? Number(result.maxPauseTime) : 60;
 
         if (!result.loopSecond) chrome.storage.local.set({ loopSecond: 5 });
-        if (!result.minPauseTime) chrome.storage.local.set({ minPauseTime: 60 });
-        if (!result.maxPauseTime) chrome.storage.local.set({ maxPauseTime: 120 });
+        if (!result.minPauseTime) chrome.storage.local.set({ minPauseTime: 30 });
+        if (!result.maxPauseTime) chrome.storage.local.set({ maxPauseTime: 60 });
     });
 
     /********************** 插件状态开关 *********************/

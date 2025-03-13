@@ -2,6 +2,7 @@
 importScripts('js/poll.js');
 importScripts('js/icCrmApiBackground.js');
 importScripts('js/spiderApi.js');
+importScripts('js/content.js');
 
 const gatherPlan = {
     jyw: false,
@@ -84,8 +85,8 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
     if (message.action === "abnormalStop") {
         Poll.abnormalStopPolling(message.reason);
         // 回复spider server 数据
-        const { code, company_id, inquiry_material_id, inquiry_record_id, temp_data_id, task } = message.spiderTaskResult;
-        if (code) {
+        if (message.spiderTaskResult && message.spiderTaskResult?.code) {
+            const { code, company_id, inquiry_material_id, inquiry_record_id, temp_data_id, task } = message.spiderTaskResult;
             await fetch('https://ic-spider2.we5.fun/api/search', {
                 method: 'POST',
                 headers: {
@@ -198,6 +199,7 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
 
         if (gatherPlan.jyw) {
             const deWeightTotalSuppliers = deWeightSuppliers(gatherPlan.jywSuppliers);
+            const result = await chrome.storage.local.get(['environment', 'account']);
 
             const body = {
                 companyId: gatherPlan.companyId,
@@ -208,19 +210,17 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
 
             console.log('【交易网】的数据全部采集完成！！！！！！！！', '\n 总数据: ', body);
 
-            // 更新询料物料状态 6: 已采集
-            // await ICCRMAPI.updateInquiryMaterial(gatherPlan.inquiryMaterialId, {
-            //     inquiry_material_status: '6'
-            // })
             // 上报 创建临时数据
-            await ICCRMAPI.updateTempData(gatherPlan.tempDataId, { json_data_plugin: JSON.stringify(body) })
+            await ICCRMAPI.updateTempData(gatherPlan.tempDataId, { kind: `环境: ${result.environment}`, json_data_plugin: JSON.stringify(body) })
 
             handleClearGatherPlan()
             console.log('清空数据-----------', gatherPlan);
 
+
             // 跳转至【交易网】首页
-            const jywTabsLastId = await handleJywTabsLastId();
-            await chrome.tabs.update(jywTabsLastId, { url: 'https://www.ic.net.cn' });
+            // await sleep(Math.floor(Math.random() * (5000 - 2000 + 1) + 2000)); // 随机等待2-5秒
+            // const jywTabsLastId = await handleJywTabsLastId();
+            // await chrome.tabs.update(jywTabsLastId, { url: 'https://www.ic.net.cn' });
         }
 
         sendResponse({ success: true });

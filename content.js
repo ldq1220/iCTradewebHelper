@@ -37,7 +37,6 @@ function sleep(ms) {
 // NTFY通知
 function sendNtfy(msg) {
     fetch('https://ntfy.we5.fun/prod_gemel', {
-        // fetch('https://ntfy.we5.fun/test_gemel', {   
         method: 'POST',
         headers: {
             'Content-Type': 'text/plain'
@@ -70,6 +69,45 @@ function lucySendMessage(msg) {
     })
 }
 
+//  易盾报警
+const handleYidunAlarm = async () => {
+    let hasYidun = false
+    const result = await chrome.storage.local.get(['environment', 'account']);
+    const hasYidunUrl = window.location.href.includes('searchPnCode.php')
+
+    if (hasYidunUrl) {
+        chrome.runtime.sendMessage({
+            action: "abnormalStop",
+            reason: "触发易盾",
+            spiderTaskResult: message.spiderTaskResult
+        });
+        sendNtfy(`【浏览器IC采集助手插件】：IC交易网触发易盾，插件停止运行！！！ , 环境名：${result.environment} , 账号：${result.account}`);
+        hasYidun = true
+    }
+
+    return hasYidun
+}
+
+// 处理未登录报警
+const handleLoginAlarm = async () => {
+    let hasLogin = false
+    const result = await chrome.storage.local.get(['environment', 'account']);
+    const hasLoginUrl = window.location.href.includes('login.php')
+
+    if (hasLoginUrl) {
+        chrome.runtime.sendMessage({
+            action: "abnormalStop",
+            reason: "交易网未登录状态",
+            spiderTaskResult: message.spiderTaskResult
+        });
+        sendNtfy(`【浏览器IC采集助手插件】：IC交易网处于未登录状态，插件停止运行！！！ , 环境名：${result.environment} , 账号：${result.account}`);
+        hasLogin = true
+        return;
+    }
+
+    return hasLogin
+}
+
 if (IC_URL.includes(window.location.hostname)) {
     // 获取URL中的查询参数
     const urlParams = new URLSearchParams(window.location.search);
@@ -87,33 +125,14 @@ if (IC_URL.includes(window.location.hostname)) {
                 try {
                     // 存储当前时间
                     await chrome.storage.local.set({ lastPollTime: new Date().toLocaleString() });
-                    const result = await chrome.storage.local.get(['environment', 'account']);
-
-                    // 检查是否处于未登录状态
-                    const hasLogin = window.location.href.includes('login.php')
-                    if (hasLogin) {
-                        sendResponse({ success: false, error: '未登录状态' });
-                        chrome.runtime.sendMessage({
-                            action: "abnormalStop",
-                            reason: "交易网未登录状态",
-                            spiderTaskResult: message.spiderTaskResult
-                        });
-                        sendNtfy(`【浏览器IC采集助手插件】：IC交易网处于未登录状态，插件停止运行！！！ , 环境名：${result.environment} , 账号：${result.account}`);
-                        return;
-                    }
 
                     // 检查是否触发易盾
-                    const hasYidun = window.location.href.includes('searchPnCode.php')
-                    if (hasYidun) {
-                        sendResponse({ success: false, error: '触发易盾' });
-                        chrome.runtime.sendMessage({
-                            action: "abnormalStop",
-                            reason: "触发易盾",
-                            spiderTaskResult: message.spiderTaskResult
-                        });
-                        sendNtfy(`【浏览器IC采集助手插件】：IC交易网触发易盾，插件停止运行！！！ , 环境名：${result.environment} , 账号：${result.account}`);
-                        return;
-                    }
+                    const hasYidun = await handleYidunAlarm()
+                    if (hasYidun) return sendResponse({ success: false, error: '触发易盾' });
+
+                    // 检查是否处于未登录状态
+                    const hasLogin = await handleLoginAlarm()
+                    if (hasLogin) return sendResponse({ success: false, error: '未登录状态' });
 
                     // 通知background.js 先清空数据
                     if (window.location.hostname.includes('ic.net.cn')) {
@@ -163,6 +182,14 @@ if (IC_URL.includes(window.location.hostname)) {
     // 页面加载完成后  检测状态  获取供应商信息
     window.addEventListener('load', async () => {
         await sleep(3000); // 等待3秒
+
+        // 检查是否触发易盾
+        const hasYidun = await handleYidunAlarm()
+        if (hasYidun) return
+
+        // 检查是否处于未登录状态
+        const hasLogin = await handleLoginAlarm()
+        if (hasLogin) return
 
         await chrome.storage.local.get(['executeGetSuppliersProcess'], async (result) => {
             if (result.executeGetSuppliersProcess) {

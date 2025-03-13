@@ -20,7 +20,7 @@ function getCompanyInfo(detailLayer) {
         const style = window.getComputedStyle(tag);
         if (style.display !== 'none') {
             // 获取类名
-            const className = tag.className;
+            const className = tag?.className;
             const title = tag.getAttribute('title');
             if (className && title) info.businessTags.push(className.split(' ')[1]);
         }
@@ -205,7 +205,7 @@ window.getSuppliersProcessByJyw = function () {
                                 // 获取 result_icons 下的所有 a 标签
                                 const iconLinks = supplyElement.querySelectorAll('.result_icons a');
                                 iconLinks.forEach(link => {
-                                    const className = link.className;
+                                    const className = link?.className;
                                     if (className) elementData.companyTag.push(className);
                                 });
                             }
@@ -225,7 +225,7 @@ window.getSuppliersProcessByJyw = function () {
                         // 物料标签
                         const materialTags = resultIdElement.querySelectorAll('a');
                         materialTags.forEach(tag => {
-                            const tagClassName = tag.querySelector('span').className;
+                            const tagClassName = tag.querySelector('span')?.className;
                             if (tagClassName) elementData.materialTags.push(tagClassName);
                         });
                     }
