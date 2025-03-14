@@ -2,7 +2,6 @@
 importScripts('js/poll.js');
 importScripts('js/icCrmApiBackground.js');
 importScripts('js/spiderApi.js');
-importScripts('js/content.js');
 
 const gatherPlan = {
     jyw: false,
@@ -117,6 +116,7 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === 'toggleStatus') {
         if (message.isEnabled) {
+            console.log('开启插件 ',);
             Poll.config.abnormalStopped = false;
             Poll.startPolling();
         } else {
@@ -211,7 +211,7 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
             console.log('【交易网】的数据全部采集完成！！！！！！！！', '\n 总数据: ', body);
 
             // 上报 创建临时数据
-            await ICCRMAPI.updateTempData(gatherPlan.tempDataId, { kind: `环境: ${result.environment}`, json_data_plugin: JSON.stringify(body) })
+            await ICCRMAPI.updateTempData(gatherPlan.tempDataId, { desc: `环境: ${result.environment}`, json_data_plugin: JSON.stringify(body) })
 
             handleClearGatherPlan()
             console.log('清空数据-----------', gatherPlan);
