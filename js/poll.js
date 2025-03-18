@@ -2,7 +2,7 @@ const Poll = {
 
     // 轮询配置
     config: {
-        interval: 5, // 间隔时间（秒）
+        interval: 10, // 间隔时间（秒）
         timerActive: false,
         alarmName: 'pollAlarm',
         resumeTimer: null, // 恢复轮询的定时器

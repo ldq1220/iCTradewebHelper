@@ -70,7 +70,7 @@ function lucySendMessage(msg) {
 }
 
 //  易盾报警
-const handleYidunAlarm = async () => {
+const handleYidunAlarm = async (spiderTaskResult) => {
     let hasYidun = false
     const result = await chrome.storage.local.get(['environment', 'account']);
     const hasYidunUrl = window.location.href.includes('searchPnCode.php')
@@ -79,7 +79,7 @@ const handleYidunAlarm = async () => {
         chrome.runtime.sendMessage({
             action: "abnormalStop",
             reason: "触发易盾",
-            spiderTaskResult: message.spiderTaskResult
+            spiderTaskResult: spiderTaskResult
         });
         sendNtfy(`【浏览器IC采集助手插件】：IC交易网触发易盾，插件停止运行！！！ , 环境名：${result.environment} , 账号：${result.account}`);
         hasYidun = true
@@ -89,7 +89,7 @@ const handleYidunAlarm = async () => {
 }
 
 // 处理未登录报警
-const handleLoginAlarm = async () => {
+const handleLoginAlarm = async (spiderTaskResult) => {
     let hasLogin = false
     const result = await chrome.storage.local.get(['environment', 'account']);
     const hasLoginUrl = window.location.href.includes('login.php')
@@ -98,7 +98,7 @@ const handleLoginAlarm = async () => {
         chrome.runtime.sendMessage({
             action: "abnormalStop",
             reason: "交易网未登录状态",
-            spiderTaskResult: message.spiderTaskResult
+            spiderTaskResult: spiderTaskResult
         });
         sendNtfy(`【浏览器IC采集助手插件】：IC交易网处于未登录状态，插件停止运行！！！ , 环境名：${result.environment} , 账号：${result.account}`);
         hasLogin = true
@@ -123,15 +123,15 @@ if (IC_URL.includes(window.location.hostname)) {
         if (message.action === 'startPoll') {
             (async () => {
                 try {
-                    // 存储当前时间
-                    await chrome.storage.local.set({ lastPollTime: new Date().toLocaleString() });
+                    // 存储当前时间  存储当前任务
+                    await chrome.storage.local.set({ lastPollTime: new Date().toLocaleString(), spiderTaskResult: message.spiderTaskResult });
 
                     // 检查是否触发易盾
-                    const hasYidun = await handleYidunAlarm()
+                    const hasYidun = await handleYidunAlarm(message.spiderTaskResult)
                     if (hasYidun) return sendResponse({ success: false, error: '触发易盾' });
 
                     // 检查是否处于未登录状态
-                    const hasLogin = await handleLoginAlarm()
+                    const hasLogin = await handleLoginAlarm(message.spiderTaskResult)
                     if (hasLogin) return sendResponse({ success: false, error: '未登录状态' });
 
                     // 通知background.js 先清空数据
@@ -182,17 +182,19 @@ if (IC_URL.includes(window.location.hostname)) {
     // 页面加载完成后  检测状态  获取供应商信息
     window.addEventListener('load', async () => {
         await sleep(3000); // 等待3秒
-
-        // 检查是否触发易盾
-        const hasYidun = await handleYidunAlarm()
-        if (hasYidun) return
-
-        // 检查是否处于未登录状态
-        const hasLogin = await handleLoginAlarm()
-        if (hasLogin) return
-
         await chrome.storage.local.get(['executeGetSuppliersProcess'], async (result) => {
             if (result.executeGetSuppliersProcess) {
+                // 获取当前任务
+                const result = await chrome.storage.local.get('spiderTaskResult');
+
+                // 检查是否触发易盾
+                const hasYidun = await handleYidunAlarm(result.spiderTaskResult)
+                if (hasYidun) return
+
+                // 检查是否处于未登录状态
+                const hasLogin = await handleLoginAlarm(result.spiderTaskResult)
+                if (hasLogin) return
+
                 let suppliersResult = await getSuppliersProcessByJyw(); // 获取【交易网】供应商信息
 
                 logger.info('获取供应商信息执行任务结果:', suppliersResult);
