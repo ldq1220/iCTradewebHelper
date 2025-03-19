@@ -310,34 +310,34 @@ window.getSuppliersProcessByJyw = function () {
                     let supplierStoreuppliers = summarizeSuppliers(supplierStore, inquiry_supplier_number)
 
                     // 模拟人工移入 先从2-5随机一个数， 再随机打乱前10个供应商，并截取前【随机数】个
-                    const randomNum = Math.floor(Math.random() * 4) + 2;
-                    const frontSupplys = supplierStoreuppliers.slice(0, 10).sort(() => Math.random() - 0.5).slice(0, randomNum);
-                    for (const supplier of frontSupplys) {
-                        const supplyLinks = Array.from(supplier.company.querySelectorAll('a:not(.detailLayer a):not(.result_icons a)'));
-                        for (const link of supplyLinks) {
-                            if (link.offsetParent !== null) {
-                                // 触发鼠标移入事件
-                                link.dispatchEvent(new MouseEvent('mouseover', {
-                                    view: window,
-                                    bubbles: true,
-                                    cancelable: true
-                                }));
+                    // const randomNum = Math.floor(Math.random() * 4) + 2;
+                    // const frontSupplys = supplierStoreuppliers.slice(0, 10).sort(() => Math.random() - 0.5).slice(0, randomNum);
+                    // for (const supplier of frontSupplys) {
+                    //     const supplyLinks = Array.from(supplier.company.querySelectorAll('a:not(.detailLayer a):not(.result_icons a)'));
+                    //     for (const link of supplyLinks) {
+                    //         if (link.offsetParent !== null) {
+                    //             // 触发鼠标移入事件
+                    //             link.dispatchEvent(new MouseEvent('mouseover', {
+                    //                 view: window,
+                    //                 bubbles: true,
+                    //                 cancelable: true
+                    //             }));
 
-                                // 等待数据加载
-                                await new Promise(resolve => setTimeout(resolve, 200));
+                    //             // 等待数据加载
+                    //             await new Promise(resolve => setTimeout(resolve, 200));
 
-                                // 触发鼠标移出事件
-                                link.dispatchEvent(new MouseEvent('mouseout', {
-                                    view: window,
-                                    bubbles: true,
-                                    cancelable: true
-                                }));
+                    //             // 触发鼠标移出事件
+                    //             link.dispatchEvent(new MouseEvent('mouseout', {
+                    //                 view: window,
+                    //                 bubbles: true,
+                    //                 cancelable: true
+                    //             }));
 
-                                // 在处理下一个链接前稍作等待
-                                await new Promise(resolve => setTimeout(resolve, 200));
-                            }
-                        }
-                    }
+                    //             // 在处理下一个链接前稍作等待
+                    //             await new Promise(resolve => setTimeout(resolve, 200));
+                    //         }
+                    //     }
+                    // }
 
                     resolve({
                         success: true,
