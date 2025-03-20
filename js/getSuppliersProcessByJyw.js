@@ -139,6 +139,10 @@ function summarizeSuppliers(supplierStore, inquiry_supplier_number) {
     return result;
 }
 
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 // 处理供应信息
 window.getSuppliersProcessByJyw = function () {
     const inquiry_supplier_number = 50;
@@ -381,3 +385,62 @@ window.getSuppliersProcessByJyw = function () {
         }
     });
 };
+
+// 搜索物料
+window.searchMaterial = async function (code) {
+    let success = true
+    try {
+        const href = window.location.href
+        const isSearchPage = href.includes('search')
+
+        if (isSearchPage) {
+            const topsearchBox = document.querySelector('.topsearchBox')
+            const searchInput = topsearchBox.querySelector('.topsch_input')
+            const searchButton = document.getElementById('btn_topSearch')
+
+            if (searchInput) {
+                searchInput.value = code
+                await sleep(1000)
+                searchButton.click()
+            }
+
+        } else {
+            const head_searchMain = document.querySelector('.head_searchMain')
+            const searchInput = head_searchMain.querySelector('.head_searchInput')
+            const searchButton = document.getElementById('btn_topSearch')
+
+            if (searchInput) {
+                searchInput.value = code
+                await sleep(1000)
+                searchButton.click()
+            }
+        }
+    } catch (error) {
+        console.error('searchMaterial error', error)
+        success = false
+    }
+
+    return success
+}
+
+// 模拟滚动
+window.scrollToBottom = async function () {
+    const scrollDistance = 800 // 滚动距离
+    const scrollDelay = 2000 // 停留时间
+    const behavior = 'smooth' // 滚动行为
+
+    // 获取当前滚动位置
+    const startPosition = window.scrollY;
+    // 向下滚动
+    window.scrollTo({
+        top: startPosition + scrollDistance,
+        behavior: behavior
+    });
+    // 等待指定时间
+    await sleep(scrollDelay)
+    // 滚回原位置
+    window.scrollTo({
+        top: startPosition,
+        behavior: behavior
+    });
+}

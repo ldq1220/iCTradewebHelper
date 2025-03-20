@@ -175,11 +175,11 @@ document.addEventListener('DOMContentLoaded', function () {
         if (result.password) passwordInput.value = result.password
 
         loopSecondInput.value = result.loopSecond ? Number(result.loopSecond) : 10;
-        minPauseTimeInput.value = result.minPauseTime ? Number(result.minPauseTime) : 30;
+        minPauseTimeInput.value = result.minPauseTime ? Number(result.minPauseTime) : 45;
         maxPauseTimeInput.value = result.maxPauseTime ? Number(result.maxPauseTime) : 60;
 
         if (!result.loopSecond) chrome.storage.local.set({ loopSecond: 10 });
-        if (!result.minPauseTime) chrome.storage.local.set({ minPauseTime: 30 });
+        if (!result.minPauseTime) chrome.storage.local.set({ minPauseTime: 45 });
         if (!result.maxPauseTime) chrome.storage.local.set({ maxPauseTime: 60 });
     });
 

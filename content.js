@@ -1,14 +1,3 @@
-/**
- * 采集流程
- * 1. 查询 物料询料 表 inquiry_material_status = 0
- * 2. 通过1的数据，拿到 询料记录id: inquiry_record_id , 查这条记录 检查状态：inquiry_status == 0 ? 1 : inquiry_status
- * 3. 跳转至IC交易网 对应物料编码的搜索页面
- * 4. 页面加载完成后，检测状态 获取供应商信息  suppliers.length === 0 ? return 采集失败 inquiry_material_status = 1 : 采集成功继续  inquiry_material_status = 2  
- * 5. 更新供应商。 先通过供应商公司名查询
- *    存在 ==>  更新与本公司的绑定关系。 更新此条 物料询料 绑定公司
- *    不存在 ==> 创建供应商。 更新此条 物料询料 绑定公司
- */
-
 // 检查当前页面是否为目标网站
 const IC_URL = ['www.ic.net.cn', 'member.ic.net.cn', 'www.hqew.com', 's.hqew.com', 'www.szlcsc.com', 'so.szlcsc.com'];
 
@@ -165,15 +154,17 @@ if (IC_URL.includes(window.location.hostname)) {
             // 设置执行状态并跳转
             await chrome.storage.local.set({ executeGetSuppliersProcess: true });
             await sleep(2000);
+
+            // 先通过js 填充输入框 点击搜索按钮  如果不成功 之间跳转
+            const success = await window.searchMaterial(code)
             await chrome.runtime.sendMessage({
-                action: "gotoJywSearchPage",
+                action: success ? "searchMaterial" : "gotoJywSearchPage",
                 inquiryRecordId: inquiry_record_id,
                 inquiryMaterialId: inquiry_material_id,
                 searchValue: code,
                 companyId: company_id,
                 tempDataId: temp_data_id
             });
-
         } catch (error) {
             logger.error('处理询料任务时发生错误:', error);
         }
@@ -181,7 +172,8 @@ if (IC_URL.includes(window.location.hostname)) {
 
     // 页面加载完成后  检测状态  获取供应商信息
     window.addEventListener('load', async () => {
-        await sleep(3000); // 等待3秒
+        await sleep(2000); // 等待2秒
+
         await chrome.storage.local.get(['executeGetSuppliersProcess'], async (result) => {
             if (result.executeGetSuppliersProcess) {
                 // 获取当前任务
@@ -206,6 +198,9 @@ if (IC_URL.includes(window.location.hostname)) {
                 }
                 console.log('供应商采集结束发送消息通道 suppliersGatherOverData', suppliersGatherOverData);
                 chrome.runtime.sendMessage({ action: "suppliersGatherOver", suppliersGatherOverData });
+
+                // 模拟滚动
+                await window.scrollToBottom()
             }
         });
     });

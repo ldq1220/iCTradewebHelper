@@ -6,7 +6,7 @@ const Poll = {
         timerActive: false,
         alarmName: 'pollAlarm',
         resumeTimer: null, // 恢复轮询的定时器
-        minPauseTime: 30, // 最小暂停时间(秒)
+        minPauseTime: 45, // 最小暂停时间(秒)
         maxPauseTime: 60, // 最大暂停时间(秒)
         abnormalStopped: false, // 异常停止轮询  // 触发易盾 未登录
     },
@@ -32,6 +32,12 @@ const Poll = {
             });
 
             console.log('交易网标签页:', tabs);
+            // // 本地模拟数据
+            // const codes = ['LTM4644IY', 'STM32F407VET6', 'PY32F030K28U6TR', 'AP40P100K', 'WS490H', 'U3213D', 'TM1640', 'EA3036CQBR', 'LTM4613EY#PBF']
+            // await chrome.tabs.sendMessage(tabs[tabs.length - 1].id, {
+            //     action: 'startPoll',
+            //     spiderTaskResult: { code: codes[Math.floor(Math.random() * codes.length)], company_id: 666, inquiry_record_id: 666, inquiry_material_id: 666, temp_data_id: 666 }
+            // });
 
             const spiderTaskResult = await SpiderApi.getSpliderTask();
             console.log('获取任务:', spiderTaskResult);

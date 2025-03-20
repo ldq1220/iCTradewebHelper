@@ -164,6 +164,14 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
 
         await chrome.tabs.update(jywTabsLastId, { url: url });
     }
+    if (request.action === "searchMaterial") {
+        const { inquiryRecordId, inquiryMaterialId, searchValue, companyId, tempDataId } = request;
+        gatherPlan.companyId = companyId;
+        gatherPlan.inquiryRecordId = inquiryRecordId;
+        gatherPlan.inquiryMaterialId = inquiryMaterialId;
+        gatherPlan.inquiryMaterialCode = searchValue;
+        gatherPlan.tempDataId = tempDataId;
+    }
 
     sendResponse({ success: true });
 });
