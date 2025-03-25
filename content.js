@@ -79,22 +79,22 @@ const handleYidunAlarm = async (spiderTaskResult) => {
 
 // 处理未登录报警
 const handleLoginAlarm = async (spiderTaskResult) => {
-    let hasLogin = false
+    let notLogin = false
     const result = await chrome.storage.local.get(['environment', 'account']);
-    const hasLoginUrl = window.location.href.includes('login.php')
+    const loginUrl = window.location.href.includes('login.php')
 
-    if (hasLoginUrl) {
+    if (loginUrl) {
         chrome.runtime.sendMessage({
             action: "abnormalStop",
             reason: "交易网未登录状态",
             spiderTaskResult: spiderTaskResult
         });
         sendNtfy(`【浏览器IC采集助手插件】：IC交易网处于未登录状态，插件停止运行！！！ , 环境名：${result.environment} , 账号：${result.account}`);
-        hasLogin = true
+        notLogin = true
         return;
     }
 
-    return hasLogin
+    return notLogin
 }
 
 if (IC_URL.includes(window.location.hostname)) {
@@ -120,8 +120,8 @@ if (IC_URL.includes(window.location.hostname)) {
                     if (hasYidun) return sendResponse({ success: false, error: '触发易盾' });
 
                     // 检查是否处于未登录状态
-                    const hasLogin = await handleLoginAlarm(message.spiderTaskResult)
-                    if (hasLogin) return sendResponse({ success: false, error: '未登录状态' });
+                    const notLogin = await handleLoginAlarm(message.spiderTaskResult)
+                    if (notLogin) return sendResponse({ success: false, error: '未登录状态' });
 
                     // 通知background.js 先清空数据
                     if (window.location.hostname.includes('ic.net.cn')) {
@@ -176,21 +176,20 @@ if (IC_URL.includes(window.location.hostname)) {
 
         await chrome.storage.local.get(['executeGetSuppliersProcess'], async (result) => {
             if (result.executeGetSuppliersProcess) {
+                await chrome.storage.local.remove('executeGetSuppliersProcess');  // 执行后清除状态
+
                 // 获取当前任务
                 const result = await chrome.storage.local.get('spiderTaskResult');
-
                 // 检查是否触发易盾
                 const hasYidun = await handleYidunAlarm(result.spiderTaskResult)
                 if (hasYidun) return
 
                 // 检查是否处于未登录状态
-                const hasLogin = await handleLoginAlarm(result.spiderTaskResult)
-                if (hasLogin) return
+                const notLogin = await handleLoginAlarm(result.spiderTaskResult)
+                if (notLogin) return
 
                 let suppliersResult = await getSuppliersProcessByJyw(); // 获取【交易网】供应商信息
-
                 logger.info('获取供应商信息执行任务结果:', suppliersResult);
-                await chrome.storage.local.remove('executeGetSuppliersProcess');  // 执行后清除状态
 
                 const suppliersGatherOverData = {
                     suppliersResult,

@@ -193,43 +193,31 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
             source,
         } = request.suppliersGatherOverData;
         const { success, data, error } = suppliersResult;
-        const sourceName = sourceData.find(item => source.includes(item.url))?.name;
 
-        if (sourceName === 'jyw') {
-            gatherPlan.jyw = true;
-            gatherPlan.jywSuppliers = data;
-            console.log('【交易网】采集完成:', {
-                success,
-                suppliersCount: data?.length,
-                error
-            });
+        gatherPlan.jyw = true;
+        gatherPlan.jywSuppliers = data;
+
+        const deWeightTotalSuppliers = deWeightSuppliers(gatherPlan.jywSuppliers);
+        const result = await chrome.storage.local.get(['environment', 'account']);
+        const body = {
+            companyId: gatherPlan.companyId,
+            inquiryMaterialId: gatherPlan.inquiryMaterialId,
+            inquiryRecordId: gatherPlan.inquiryRecordId,
+            suppliers: deWeightTotalSuppliers,
         }
 
-        if (gatherPlan.jyw) {
-            const deWeightTotalSuppliers = deWeightSuppliers(gatherPlan.jywSuppliers);
-            const result = await chrome.storage.local.get(['environment', 'account']);
+        console.log('【交易网】的数据全部采集完成！！！！！！！！', '\n 总数据: ', body, source);
 
-            const body = {
-                companyId: gatherPlan.companyId,
-                inquiryMaterialId: gatherPlan.inquiryMaterialId,
-                inquiryRecordId: gatherPlan.inquiryRecordId,
-                suppliers: deWeightTotalSuppliers,
-            }
+        // 上报 创建临时数据
+        await ICCRMAPI.updateTempData(gatherPlan.tempDataId, { desc: `环境: ${result.environment}`, json_data_plugin: JSON.stringify(body) })
 
-            console.log('【交易网】的数据全部采集完成！！！！！！！！', '\n 总数据: ', body);
+        handleClearGatherPlan()
+        console.log('清空数据-----------', gatherPlan);
 
-            // 上报 创建临时数据
-            await ICCRMAPI.updateTempData(gatherPlan.tempDataId, { desc: `环境: ${result.environment}`, json_data_plugin: JSON.stringify(body) })
-
-            handleClearGatherPlan()
-            console.log('清空数据-----------', gatherPlan);
-
-
-            // 跳转至【交易网】首页
-            // await sleep(Math.floor(Math.random() * (5000 - 2000 + 1) + 2000)); // 随机等待2-5秒
-            // const jywTabsLastId = await handleJywTabsLastId();
-            // await chrome.tabs.update(jywTabsLastId, { url: 'https://www.ic.net.cn' });
-        }
+        // 跳转至【交易网】首页
+        // await sleep(Math.floor(Math.random() * (5000 - 2000 + 1) + 2000)); // 随机等待2-5秒
+        // const jywTabsLastId = await handleJywTabsLastId();
+        // await chrome.tabs.update(jywTabsLastId, { url: 'https://www.ic.net.cn' });
 
         sendResponse({ success: true });
     }
