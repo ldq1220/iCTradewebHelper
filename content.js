@@ -97,6 +97,22 @@ const handleLoginAlarm = async (spiderTaskResult) => {
     return notLogin
 }
 
+// 处理账号被封禁
+const handleAccountBlocked = async (spiderTaskResult) => {
+    const isBlocked = await window.checkAccountIsBlocked()
+    const result = await chrome.storage.local.get(['environment', 'account']);
+    if (isBlocked) {
+        chrome.runtime.sendMessage({
+            action: "abnormalStop",
+            reason: "交易网账号被封禁",
+            spiderTaskResult: spiderTaskResult
+        });
+        sendNtfy(`【浏览器IC采集助手插件】：IC交易网账号被封禁，插件停止运行！！！ , 环境名：${result.environment} , 账号：${result.account}`);
+    }
+
+    return isBlocked
+}
+
 if (IC_URL.includes(window.location.hostname)) {
     // 获取URL中的查询参数
     const urlParams = new URLSearchParams(window.location.search);
@@ -155,7 +171,7 @@ if (IC_URL.includes(window.location.hostname)) {
             await chrome.storage.local.set({ executeGetSuppliersProcess: true });
             await sleep(2000);
 
-            // 先通过js 填充输入框 点击搜索按钮  如果不成功 之间跳转
+            // 先通过js 填充输入框 点击搜索按钮  如果不成功 直接跳转
             const success = await window.searchMaterial(code)
             await chrome.runtime.sendMessage({
                 action: success ? "searchMaterial" : "gotoJywSearchPage",
@@ -190,6 +206,13 @@ if (IC_URL.includes(window.location.hostname)) {
 
                 let suppliersResult = await getSuppliersProcessByJyw(); // 获取【交易网】供应商信息
                 logger.info('获取供应商信息执行任务结果:', suppliersResult);
+
+                // 校验是否被封禁。
+                if (suppliersResult.data.length === 0) {
+                    const isBlocked = await handleAccountBlocked(result.spiderTaskResult)
+                    console.log('isBlocked', isBlocked);
+                    if (isBlocked) return
+                }
 
                 const suppliersGatherOverData = {
                     suppliersResult,

@@ -1,3 +1,4 @@
+// 1.1.5 版本 新增 账号被封禁 异常停止
 // 直接引入 poll.js
 importScripts('js/poll.js');
 importScripts('js/icCrmApiBackground.js');

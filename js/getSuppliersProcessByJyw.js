@@ -444,3 +444,13 @@ window.scrollToBottom = async function () {
         behavior: behavior
     });
 }
+
+
+// 校验账号是否没封禁
+window.checkAccountIsBlocked = async function (account) {
+    const bodyDom = document.querySelector('body')
+    const bodyDomText = bodyDom.textContent
+    const blocked = bodyDomText.includes('禁止访问, 请联系客服')
+    return blocked
+}
+
