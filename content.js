@@ -210,7 +210,6 @@ if (IC_URL.includes(window.location.hostname)) {
                 // 校验是否被封禁。
                 if (suppliersResult.data.length === 0) {
                     const isBlocked = await handleAccountBlocked(result.spiderTaskResult)
-                    console.log('isBlocked', isBlocked);
                     if (isBlocked) return
                 }
 

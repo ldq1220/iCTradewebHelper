@@ -32,13 +32,6 @@ const Poll = {
             });
 
             console.log('交易网标签页:', tabs);
-            // // 本地模拟数据
-            // const codes = ['LTM4644IY', 'STM32F407VET6', 'PY32F030K28U6TR', 'AP40P100K', 'WS490H', 'U3213D', 'TM1640', 'EA3036CQBR', 'LTM4613EY#PBF']
-            // await chrome.tabs.sendMessage(tabs[tabs.length - 1].id, {
-            //     action: 'startPoll',
-            //     spiderTaskResult: { code: codes[Math.floor(Math.random() * codes.length)], company_id: 666, inquiry_record_id: 666, inquiry_material_id: 666, temp_data_id: 666 }
-            // });
-
             const spiderTaskResult = await SpiderApi.getSpliderTask();
             console.log('获取任务:', spiderTaskResult);
 
@@ -52,21 +45,38 @@ const Poll = {
                     spiderTaskResult: spiderTaskResult
                 });
 
+                // 本地模拟数据
+                // const codes = ['LTM4644IY', 'STM32F407VET6', 'PY32F030K28U6TR', 'AP40P100K', 'WS490H', 'U3213D', 'TM1640', 'EA3036CQBR', 'LTM4613EY#PBF']
+                // await chrome.tabs.sendMessage(tabs[tabs.length - 1].id, {
+                //     action: 'startPoll',
+                //     spiderTaskResult: { code: codes[Math.floor(Math.random() * codes.length)], company_id: 666, inquiry_record_id: 666, inquiry_material_id: 666, temp_data_id: 666 }
+                // });
+
                 // 随机暂停60-120秒后恢复轮询
                 const pauseTime = Math.floor(Math.random() *
                     (this.config.maxPauseTime - this.config.minPauseTime + 1) +
                     this.config.minPauseTime) * 1000;
 
-                console.log(`将在 ${pauseTime / 1000} 秒后恢复轮询`);
-                this.config.resumeTimer = setTimeout(async () => {
-                    this.startPolling();
-                }, pauseTime);
+                this.pauseAndResumeLater(pauseTime / 1000); // 恢复轮询
+
             } else {
                 console.log('没有需要采集的询料物料');
             }
         } catch (error) {
             console.log('轮询执行错误:', error);
         }
+    },
+
+    // 暂停轮询后恢复轮询
+    async pauseAndResumeLater(pauseTime) {
+        // 确保监听器已初始化，无论this._alarmListener是否存在都重新初始化
+        this.initAlarmListener();
+
+        console.log(`将在 ${pauseTime} 秒后恢复轮询`);
+        // 创建一次性的alarm来恢复轮询
+        chrome.alarms?.create('resumePollAlarm', {
+            delayInMinutes: pauseTime / 60 // 转换为分钟
+        });
     },
 
     // 初始化轮询监听器（在扩展启动时调用一次）
@@ -80,6 +90,10 @@ const Poll = {
                 await this.loadConfig();
                 console.log('触发轮询:', new Date().toLocaleString());
                 this.pollHandler();
+            } else if (alarm.name === 'resumePollAlarm') {
+                // 处理恢复轮询
+                chrome.alarms?.clear('resumePollAlarm');
+                this.startPolling();
             }
         };
 
@@ -128,6 +142,7 @@ const Poll = {
     // 停止轮询
     stopPolling() {
         chrome.alarms?.clear(this.config.alarmName);
+        chrome.alarms?.clear('resumePollAlarm');
         this.config.timerActive = false;
         clearTimeout(this.config.resumeTimer);
         this.config.resumeTimer = null;
