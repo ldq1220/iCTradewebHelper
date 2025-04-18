@@ -220,9 +220,12 @@ if (IC_URL.includes(window.location.hostname)) {
                 console.log('供应商采集结束发送消息通道 suppliersGatherOverData', suppliersGatherOverData);
                 chrome.runtime.sendMessage({ action: "suppliersGatherOver", suppliersGatherOverData });
 
+                console.log('开始模拟滚动和移入供应商')
                 // 模拟滚动
                 await window.scrollToBottom()
+                // 模拟鼠标移入供应商   
+                await window.mouseMoveSupplier()
             }
         });
-    });
+    })
 }

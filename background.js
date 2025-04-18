@@ -1,3 +1,4 @@
+// 1.1.8 版本 新增 模拟鼠标移入供应商 + 五分钟没有任务 返回首页
 // 1.1.6 版本 重写 恢复轮询
 // 1.1.5 版本 新增 账号被封禁 异常停止
 // 直接引入 poll.js
@@ -84,7 +85,6 @@ function deWeightSuppliers(suppliers) {
 // 监听来自content.js的消息  异常停止 
 chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
     if (message.action === "abnormalStop") {
-        Poll.abnormalStopPolling(message.reason);
         // 回复spider server 数据
         if (message.spiderTaskResult && message.spiderTaskResult?.code) {
             const { code, company_id, inquiry_material_id, inquiry_record_id, temp_data_id, task } = message.spiderTaskResult;
@@ -108,6 +108,8 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
                 })
             })
         }
+
+        Poll.abnormalStopPolling(message.reason);
 
         sendResponse({ success: true });
     }
@@ -214,8 +216,6 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
         await ICCRMAPI.updateTempData(gatherPlan.tempDataId, { desc: `环境: ${result.environment}`, json_data_plugin: JSON.stringify(body) })
 
         handleClearGatherPlan()
-        console.log('清空数据-----------', gatherPlan);
-
         // 跳转至【交易网】首页
         // await sleep(Math.floor(Math.random() * (5000 - 2000 + 1) + 2000)); // 随机等待2-5秒
         // const jywTabsLastId = await handleJywTabsLastId();

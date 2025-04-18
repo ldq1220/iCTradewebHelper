@@ -5,10 +5,11 @@ const Poll = {
         interval: 10, // 间隔时间（秒）
         timerActive: false,
         alarmName: 'pollAlarm',
-        resumeTimer: null, // 恢复轮询的定时器
         minPauseTime: 45, // 最小暂停时间(秒)
         maxPauseTime: 60, // 最大暂停时间(秒)
         abnormalStopped: false, // 异常停止轮询  // 触发易盾 未登录
+        goHomeTime: 5 * 60, // 多长时间没有任务 返回首页
+        goHomeTimeSumTime: 0, // 停止时间之和
     },
 
     async loadConfig() {
@@ -36,6 +37,7 @@ const Poll = {
             console.log('获取任务:', spiderTaskResult);
 
             if (spiderTaskResult && spiderTaskResult.code) {
+                this.config.goHomeTimeSumTime = 0;
                 // 停止当前轮询
                 this.stopPolling();
 
@@ -46,7 +48,7 @@ const Poll = {
                 });
 
                 // 本地模拟数据
-                // const codes = ['LTM4644IY', 'STM32F407VET6', 'PY32F030K28U6TR', 'AP40P100K', 'WS490H', 'U3213D', 'TM1640', 'EA3036CQBR', 'LTM4613EY#PBF']
+                // const codes = ['LTM4644IY', 'STM32F407VET6', 'PY32F030K28U6TR', 'AP40P100K', 'WS490H', 'TM1640', 'EA3036CQBR', 'LTM4613EY#PBF']
                 // await chrome.tabs.sendMessage(tabs[tabs.length - 1].id, {
                 //     action: 'startPoll',
                 //     spiderTaskResult: { code: codes[Math.floor(Math.random() * codes.length)], company_id: 666, inquiry_record_id: 666, inquiry_material_id: 666, temp_data_id: 666 }
@@ -58,9 +60,13 @@ const Poll = {
                     this.config.minPauseTime) * 1000;
 
                 this.pauseAndResumeLater(pauseTime / 1000); // 恢复轮询
-
             } else {
-                console.log('没有需要采集的询料物料');
+                this.config.goHomeTimeSumTime += this.config.interval;
+                if (this.config.goHomeTimeSumTime >= this.config.goHomeTime) {
+                    this.config.goHomeTimeSumTime = 0;
+                    await this.goHome();
+                }
+                console.log('没有需要采集的询料物料', this.config.goHomeTimeSumTime);
             }
         } catch (error) {
             console.log('轮询执行错误:', error);
@@ -144,8 +150,20 @@ const Poll = {
         chrome.alarms?.clear(this.config.alarmName);
         chrome.alarms?.clear('resumePollAlarm');
         this.config.timerActive = false;
-        clearTimeout(this.config.resumeTimer);
-        this.config.resumeTimer = null;
         console.log('停止轮询', new Date().toLocaleString());
+    },
+
+    // 返回首页
+    async goHome() {
+        const tabs = await chrome.tabs.query({
+            url: "*://*.ic.net.cn/*"  // 匹配【交易网】所有标签页
+        });
+        if (tabs.length > 0) {
+            const currentTab = tabs[tabs.length - 1];
+            // 判断当前是否已经在首页
+            if (currentTab.url !== 'https://www.ic.net.cn/') {
+                await chrome.tabs.update(currentTab.id, { url: 'https://www.ic.net.cn/' });
+            }
+        }
     }
 };

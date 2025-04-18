@@ -313,36 +313,6 @@ window.getSuppliersProcessByJyw = function () {
                 } else {
                     let supplierStoreuppliers = summarizeSuppliers(supplierStore, inquiry_supplier_number)
 
-                    // 模拟人工移入 先从2-5随机一个数， 再随机打乱前10个供应商，并截取前【随机数】个
-                    // const randomNum = Math.floor(Math.random() * 4) + 2;
-                    // const frontSupplys = supplierStoreuppliers.slice(0, 10).sort(() => Math.random() - 0.5).slice(0, randomNum);
-                    // for (const supplier of frontSupplys) {
-                    //     const supplyLinks = Array.from(supplier.company.querySelectorAll('a:not(.detailLayer a):not(.result_icons a)'));
-                    //     for (const link of supplyLinks) {
-                    //         if (link.offsetParent !== null) {
-                    //             // 触发鼠标移入事件
-                    //             link.dispatchEvent(new MouseEvent('mouseover', {
-                    //                 view: window,
-                    //                 bubbles: true,
-                    //                 cancelable: true
-                    //             }));
-
-                    //             // 等待数据加载
-                    //             await new Promise(resolve => setTimeout(resolve, 200));
-
-                    //             // 触发鼠标移出事件
-                    //             link.dispatchEvent(new MouseEvent('mouseout', {
-                    //                 view: window,
-                    //                 bubbles: true,
-                    //                 cancelable: true
-                    //             }));
-
-                    //             // 在处理下一个链接前稍作等待
-                    //             await new Promise(resolve => setTimeout(resolve, 200));
-                    //         }
-                    //     }
-                    // }
-
                     resolve({
                         success: true,
                         data: supplierStoreuppliers,
@@ -392,28 +362,25 @@ window.searchMaterial = async function (code) {
     try {
         const href = window.location.href
         const isSearchPage = href.includes('search')
+        let searchInput = null
+        let searchButton = null
 
         if (isSearchPage) {
             const topsearchBox = document.querySelector('.topsearchBox')
-            const searchInput = topsearchBox.querySelector('.topsch_input')
-            const searchButton = document.getElementById('btn_topSearch')
-
-            if (searchInput) {
-                searchInput.value = code
-                await sleep(1000)
-                searchButton.click()
-            }
-
+            searchInput = topsearchBox.querySelector('.topsch_input')
+            searchButton = document.getElementById('btn_topSearch')
         } else {
             const head_searchMain = document.querySelector('.head_searchMain')
-            const searchInput = head_searchMain.querySelector('.head_searchInput')
-            const searchButton = document.getElementById('btn_topSearch')
+            searchInput = head_searchMain.querySelector('.head_searchInput')
+            searchButton = document.getElementById('btn_topSearch')
+        }
 
-            if (searchInput) {
-                searchInput.value = code
-                await sleep(1000)
-                searchButton.click()
-            }
+        if (searchInput) {
+            searchInput.value = ''
+            await sleep(500)
+            searchInput.value = code
+            await sleep(2000)
+            searchButton.click()
         }
     } catch (error) {
         console.error('searchMaterial error', error)
@@ -425,7 +392,7 @@ window.searchMaterial = async function (code) {
 
 // 模拟滚动
 window.scrollToBottom = async function () {
-    const scrollDistance = 800 // 滚动距离
+    const scrollDistance = Math.floor(Math.random() * (300 - 200 + 1)) + 200 // 随机生成200到300之间的滚动距离
     const scrollDelay = 2000 // 停留时间
     const behavior = 'smooth' // 滚动行为
 
@@ -439,10 +406,46 @@ window.scrollToBottom = async function () {
     // 等待指定时间
     await sleep(scrollDelay)
     // 滚回原位置
-    window.scrollTo({
-        top: startPosition,
-        behavior: behavior
-    });
+    // window.scrollTo({
+    //     top: startPosition,
+    //     behavior: behavior
+    // });
+}
+
+// 模拟鼠标移入供应商 查看供应商信息
+window.mouseMoveSupplier = async function () {
+    // 先从1-5随机一个数， 再随机打乱 Math.floor(supplierStoreuppliers.length / 2) 个供应商，并截取前【随机数】个
+    const { data: supplierStoreuppliers } = await window.getSuppliersProcessByJyw()
+    if (!supplierStoreuppliers || !supplierStoreuppliers.length) return
+
+    const randomNum = Math.floor(Math.random() * 5) + 1;
+    const frontSupplys = supplierStoreuppliers.slice(0, Math.floor(supplierStoreuppliers.length / 2)).sort(() => Math.random() - 0.5).slice(0, randomNum);
+    for (const supplier of frontSupplys) {
+        const supplyLinks = Array.from(supplier.company.querySelectorAll('a:not(.detailLayer a):not(.result_icons a)'));
+        for (const link of supplyLinks) {
+            if (link.offsetParent !== null) {
+                // 触发鼠标移入事件
+                link.dispatchEvent(new MouseEvent('mouseover', {
+                    view: window,
+                    bubbles: true,
+                    cancelable: true
+                }));
+
+                const randomSecond = Math.floor(Math.random() * 4) + 2; // 等待随机2-5s后 鼠标移开
+                await new Promise(resolve => setTimeout(resolve, randomSecond * 1000));
+
+                // 触发鼠标移出事件
+                link.dispatchEvent(new MouseEvent('mouseout', {
+                    view: window,
+                    bubbles: true,
+                    cancelable: true
+                }));
+
+                // 在处理下一个链接前稍作等待
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+        }
+    }
 }
 
 
