@@ -1,3 +1,4 @@
+// 1.1.9 版本 账号被封禁不将任务返回
 // 1.1.8 版本 新增 模拟鼠标移入供应商 + 五分钟没有任务 返回首页
 // 1.1.6 版本 重写 恢复轮询
 // 1.1.5 版本 新增 账号被封禁 异常停止
@@ -86,7 +87,7 @@ function deWeightSuppliers(suppliers) {
 chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
     if (message.action === "abnormalStop") {
         // 回复spider server 数据
-        if (message.spiderTaskResult && message.spiderTaskResult?.code) {
+        if (message.spiderTaskResult && message.spiderTaskResult?.code && message.reason != '交易网账号被封禁') {
             const { code, company_id, inquiry_material_id, inquiry_record_id, temp_data_id, task } = message.spiderTaskResult;
             await fetch('https://ic-spider2.we5.fun/api/search', {
                 method: 'POST',
