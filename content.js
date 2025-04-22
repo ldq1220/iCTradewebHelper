@@ -70,7 +70,7 @@ const handleYidunAlarm = async (spiderTaskResult) => {
             reason: "触发易盾",
             spiderTaskResult: spiderTaskResult
         });
-        sendNtfy(`【浏览器IC采集助手插件】：IC交易网触发易盾，插件停止运行！！！ , 环境名：${result.environment} , 账号：${result.account} , spiderTaskResult：${spiderTaskResult}`);
+        sendNtfy(`【浏览器IC采集助手插件】：IC交易网触发易盾，插件停止运行！！！ , 环境名：${result.environment} , 账号：${result.account} , spiderTaskResult：${JSON.stringify(spiderTaskResult)}`);
         hasYidun = true
     }
 
@@ -89,7 +89,7 @@ const handleLoginAlarm = async (spiderTaskResult) => {
             reason: "交易网未登录状态",
             spiderTaskResult: spiderTaskResult
         });
-        sendNtfy(`【浏览器IC采集助手插件】：IC交易网处于未登录状态，插件停止运行！！！ , 环境名：${result.environment} , 账号：${result.account} , spiderTaskResult：${spiderTaskResult}`);
+        sendNtfy(`【浏览器IC采集助手插件】：IC交易网处于未登录状态，插件停止运行！！！ , 环境名：${result.environment} , 账号：${result.account} , spiderTaskResult：${JSON.stringify(spiderTaskResult)}`);
         notLogin = true
         return;
     }
@@ -107,7 +107,7 @@ const handleAccountBlocked = async (spiderTaskResult) => {
             reason: "交易网账号被封禁",
             spiderTaskResult: spiderTaskResult
         });
-        sendNtfy(`【浏览器IC采集助手插件】：IC交易网账号被封禁，插件停止运行！！！ , 环境名：${result.environment} , 账号：${result.account} , spiderTaskResult：${spiderTaskResult}`);
+        sendNtfy(`【浏览器IC采集助手插件】：IC交易网账号被封禁，插件停止运行！！！ , 环境名：${result.environment} , 账号：${result.account} , spiderTaskResult：${JSON.stringify(spiderTaskResult)}`);
     }
 
     return isBlocked

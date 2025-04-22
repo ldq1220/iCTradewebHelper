@@ -392,7 +392,7 @@ window.searchMaterial = async function (code) {
 
 // 模拟滚动
 window.scrollToBottom = async function () {
-    const scrollDistance = Math.floor(Math.random() * (300 - 200 + 1)) + 200 // 随机生成200到300之间的滚动距离
+    const scrollDistance = Math.floor(Math.random() * (200 - 100 + 1)) + 100 // 随机生成200到300之间的滚动距离
     const scrollDelay = 2000 // 停留时间
     const behavior = 'smooth' // 滚动行为
 
