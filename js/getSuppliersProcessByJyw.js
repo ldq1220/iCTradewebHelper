@@ -360,27 +360,53 @@ window.getSuppliersProcessByJyw = function () {
 window.searchMaterial = async function (code) {
     let success = true
     try {
-        const href = window.location.href
-        const isSearchPage = href.includes('search')
-        let searchInput = null
-        let searchButton = null
+        const searchTriggerDom = document.querySelector('.fake-input') || document.querySelector('.textEllipsis')
+        if (searchTriggerDom) {
+            searchTriggerDom.click()
+        }
+        await sleep(2000)
 
-        if (isSearchPage) {
-            const topsearchBox = document.querySelector('.topsearchBox')
-            searchInput = topsearchBox.querySelector('.topsch_input')
-            searchButton = document.getElementById('btn_topSearch')
-        } else {
-            const head_searchMain = document.querySelector('.head_searchMain')
-            searchInput = head_searchMain.querySelector('.head_searchInput')
-            searchButton = document.getElementById('btn_topSearch')
+        // 尝试获取Vue组件实例并更新其数据
+        const inputDom = document.querySelector('.uni-input-input')
+        if (inputDom) {
+            // 方法1: 设置值并触发事件
+            inputDom.value = code
+
+            // 使用更强力的事件触发方式
+            inputDom.dispatchEvent(new Event('input', { bubbles: true, composed: true }))
+            inputDom.dispatchEvent(new Event('change', { bubbles: true, composed: true }))
+
+            // 方法2: 尝试直接访问Vue组件实例
+            // 遍历父元素，寻找可能存在的__vue__属性
+            let element = inputDom;
+            while (element && !element.__vue__) {
+                element = element.parentElement;
+            }
+
+            // 如果找到了Vue实例，直接设置其值
+            if (element && element.__vue__) {
+                // 可能需要根据实际组件结构调整
+                if (element.__vue__.value !== undefined) {
+                    element.__vue__.value = code;
+                }
+                // 或者触发其input方法
+                if (typeof element.__vue__.onInput === 'function') {
+                    element.__vue__.onInput({ detail: { value: code } });
+                }
+            }
         }
 
-        if (searchInput) {
-            searchInput.value = ''
-            await sleep(500)
-            searchInput.value = code
-            await sleep(2000)
-            searchButton.click()
+        await sleep(2000)
+
+        const searchButtonDom = document.querySelector('.sea-btn')
+        if (searchButtonDom) {
+            // 尝试直接调用搜索方法，而不是点击按钮
+            if (window.__uniapp__ && typeof window.__uniapp__.search === 'function') {
+                window.__uniapp__.search(code);
+            } else {
+                // 如果不能直接调用方法，则模拟点击
+                searchButtonDom.click()
+            }
         }
     } catch (error) {
         console.error('searchMaterial error', error)
@@ -390,64 +416,74 @@ window.searchMaterial = async function (code) {
     return success
 }
 
-// 模拟滚动
-window.scrollToBottom = async function () {
-    const scrollDistance = Math.floor(Math.random() * (200 - 100 + 1)) + 100 // 随机生成200到300之间的滚动距离
-    const scrollDelay = 2000 // 停留时间
-    const behavior = 'smooth' // 滚动行为
+// 获取页面供应商 资质等级 物料标签
+window.getSuppliersOrderInfo = async function () {
+    const searcListAll = document.querySelectorAll('.searcList')
+    const suppliersOrderInfo = []
 
-    // 获取当前滚动位置
-    const startPosition = window.scrollY;
-    // 向下滚动
-    window.scrollTo({
-        top: startPosition + scrollDistance,
-        behavior: behavior
-    });
-    // 等待指定时间
-    await sleep(scrollDelay)
-    // 滚回原位置
-    // window.scrollTo({
-    //     top: startPosition,
-    //     behavior: behavior
-    // });
-}
+    for (const searcList of searcListAll) {
 
-// 模拟鼠标移入供应商 查看供应商信息
-window.mouseMoveSupplier = async function () {
-    // 先从1-5随机一个数， 再随机打乱 Math.floor(supplierStoreuppliers.length / 2) 个供应商，并截取前【随机数】个
-    const { data: supplierStoreuppliers } = await window.getSuppliersProcessByJyw()
-    if (!supplierStoreuppliers || !supplierStoreuppliers.length) return
+        const suppliersOrderInfoItem = {
+            companyName: '',
+            companyTag: [],
+            materialTags: []
+        }
 
-    const randomNum = Math.floor(Math.random() * 5) + 1;
-    const frontSupplys = supplierStoreuppliers.slice(0, Math.floor(supplierStoreuppliers.length / 2)).sort(() => Math.random() - 0.5).slice(0, randomNum);
-    for (const supplier of frontSupplys) {
-        const supplyLinks = Array.from(supplier.company.querySelectorAll('a:not(.detailLayer a):not(.result_icons a)'));
-        for (const link of supplyLinks) {
-            if (link.offsetParent !== null) {
-                // 触发鼠标移入事件
-                link.dispatchEvent(new MouseEvent('mouseover', {
-                    view: window,
-                    bubbles: true,
-                    cancelable: true
-                }));
+        const gysDom = searcList.querySelector('.gys')
+        // 名称
+        const comName = gysDom.querySelector('.comName')
+        if (comName) {
+            suppliersOrderInfoItem.companyName = comName.textContent.trim()
+        }
+        // 资质等级
+        const idTrBottom = gysDom.querySelector('.idTrBottom')
+        const rzIconAll = idTrBottom.querySelectorAll('.rzIcon')
+        if (rzIconAll) {
+            for (const rzIcon of rzIconAll) {
+                const className = rzIcon.className
+                const lastClassName = className.split(' ').pop()
 
-                const randomSecond = Math.floor(Math.random() * 4) + 2; // 等待随机2-5s后 鼠标移开
-                await new Promise(resolve => setTimeout(resolve, randomSecond * 1000));
-
-                // 触发鼠标移出事件
-                link.dispatchEvent(new MouseEvent('mouseout', {
-                    view: window,
-                    bubbles: true,
-                    cancelable: true
-                }));
-
-                // 在处理下一个链接前稍作等待
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                const tidyClassName = {
+                    'icon-ic500': 'icon500',
+                    'icon-sscp': 'sscp',
+                    'icon-iccp': 'iccp',
+                    'icon-stock': 'stock',
+                    'icon-hckc': 'icon_hckc',
+                    'icon-hcjg': 'icon_hcjg',
+                    'icon-redVip': 'redvip',
+                    'icon-daili': 'daili',
+                    'icon-yc': 'yuanchang',
+                    'icon-a-2024': 'year_icon',
+                    'icon-jiangbei': 'brandStar_icon',
+                    'icon-rzpg': 'renzheng_icon'
+                }
+                suppliersOrderInfoItem.companyTag.push(tidyClassName[lastClassName] || lastClassName)
             }
         }
-    }
-}
 
+
+        // 物料标签
+        const xhDom = searcList.querySelector('.xh')
+        if (xhDom) {
+            const materialRzIcon = xhDom.querySelector('.rzIcon')
+            if (materialRzIcon) {
+                const materialRzIconClassName = materialRzIcon.className
+                const materialRzIconClassNameLast = materialRzIconClassName.split(' ').pop()
+                const tidyClassName = {
+                    'icon-xhpm': 'icon_xianhuo',
+                    'icon-tj': 'i-tuijian-v2',
+                    'icon-yx': 'icon_youXian',
+                    'icon-rm': 'icon_reMai'
+                }
+                suppliersOrderInfoItem.materialTags.push(tidyClassName[materialRzIconClassNameLast] || materialRzIconClassNameLast)
+            }
+        }
+
+        suppliersOrderInfo.push(suppliersOrderInfoItem)
+    }
+
+    return suppliersOrderInfo
+}
 
 // 校验账号是否没封禁
 window.checkAccountIsBlocked = async function (account) {
@@ -456,4 +492,19 @@ window.checkAccountIsBlocked = async function (account) {
     const blocked = bodyDomText.includes('禁止访问, 请联系客服')
     return blocked
 }
+
+
+window.checkYiDdun = async function () {
+    let hasYidun = false
+    const bodyDom = document.querySelector('.yidun_popup')
+
+    // 添加检查，确保bodyDom存在
+    if (bodyDom) {
+        const displayProperty = getComputedStyle(bodyDom).display.includes('block')
+        hasYidun = displayProperty
+    }
+
+    return hasYidun
+}
+
 

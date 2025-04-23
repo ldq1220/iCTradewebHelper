@@ -1,8 +1,8 @@
 {
     "manifest_version": 3,
     "name": "IC Helper",
-    "version": "1.2.0",
-    "description": "IC交易网助手",
+    "version": "2.0.0",
+    "description": "IC交易网助手(移动端)",
     "icons": {
         "16": "icons/icon16.png",
         "32": "icons/icon32.png",
@@ -12,7 +12,7 @@
     },
     "action": {
         "default_popup": "popup/popup.html",
-        "default_title": "IC交易网助手"
+        "default_title": "IC交易网助手(移动端)"
     },
     "content_scripts": [
         {
@@ -21,7 +21,8 @@
                 "*://member.ic.net.cn/*",
                 "*://www.hqew.com/*",
                 "*://s.hqew.com/*",
-                "*://*.szlcsc.com/*"
+                "*://*.szlcsc.com/*",
+                "*://m.ic.net.cn/*"
             ],
             "js": [
                 "js/utils.js",
@@ -35,6 +36,16 @@
             ]
         }
     ],
+    "web_accessible_resources": [
+        {
+            "resources": [
+                "js/networkInterceptor.js"
+            ],
+            "matches": [
+                "*://m.ic.net.cn/*"
+            ]
+        }
+    ],
     "background": {
         "service_worker": "background.js"
     },
@@ -42,9 +53,14 @@
         "activeTab",
         "tabs",
         "storage",
-        "alarms"
+        "alarms",
+        "webRequest",
+        "declarativeNetRequest",
+        "declarativeNetRequestFeedback"
     ],
     "host_permissions": [
-        "*://www.ic.net.cn/*"
+        "*://www.ic.net.cn/*",
+        "*://m.ic.net.cn/*",
+        "*://max.ic.net.cn/*"
     ]
 }

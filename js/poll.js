@@ -27,9 +27,10 @@ const Poll = {
                 action: "updateLastRunTime",
             });
 
+
             // 检查当前是否在目标网站
             const tabs = await chrome.tabs.query({
-                url: "*://*.ic.net.cn/*"  // 匹配【交易网】所有标签页
+                url: "*://*.m.ic.net.cn/*"  // 匹配【交易网】所有标签页
             });
 
             console.log('交易网标签页:', tabs);
@@ -48,10 +49,58 @@ const Poll = {
                 });
 
                 // 本地模拟数据
-                // const codes = ['LTM4644IY', 'STM32F407VET6', 'PY32F030K28U6TR', 'AP40P100K', 'WS490H', 'TM1640', 'EA3036CQBR', 'LTM4613EY#PBF']
+                // const codes = [
+                //     "ADUM1200ARZ-RL7",
+                //     "MX25R6435FBDIL0",
+                //     "SS3200",
+                //     "TLP2362(TPL,E(T",
+                //     "74HC08PW,118",
+                //     "AMC1200SDUBR",
+                //     "EG1198",
+                //     "IR2110STRPBF",
+                //     "LMV331SE-7",
+                //     "MC74HC1G08DTT1G",
+                //     "MP2315GJ-Z",
+                //     "NSI1311-DSWVR",
+                //     "STM32F103RCT6",
+                //     "L3GD20TR",
+                //     "L3GD20HTR",
+                //     "SP-2U2+",
+                //     "B66453G0000X608",
+                //     "ACPL-024L-500E",
+                //     "HCPL-0601-500E",
+                //     "FT245BL-REEL",
+                //     "TRF250-120",
+                //     "ADG453BRZ",
+                //     "TL3340AF160QG",
+                //     "ADUM1201ARZ",
+                //     "GD32F450VGT6",
+                //     "MMA2P00-AS-SP-C",
+                //     "STM802SM6F",
+                //     "STM32G491RCT6TR",
+                //     "STPIC6C595TTR",
+                //     "BSS123LT1G",
+                //     "DPA424GN-TL",
+                //     "AO3416",
+                //     "PI7C9X130DNDE",
+                //     "FDG6303N",
+                //     "STM32G030F6P6",
+                //     "307005240",
+                //     "TMS320F28335PGFA",
+                //     "ADM2587EBRWZ",
+                //     "AT32F403ZGT6",
+                //     "ADIS16210CMLZ",
+                //     "D38999/26WA98SN",
+                //     "LPC845M301JHI33Y",
+                //     "BCM82391AKFSBG",
+                //     "BCM58712DB0IFEB20G",
+                //     "08051C105K4Z2A",
+                //     "08SR-3S",
+                //     "03SR-3S"
+                // ]
                 // await chrome.tabs.sendMessage(tabs[tabs.length - 1].id, {
                 //     action: 'startPoll',
-                //     spiderTaskResult: { code: codes[Math.floor(Math.random() * codes.length)], company_id: 666, inquiry_record_id: 666, inquiry_material_id: 666, temp_data_id: 666 }
+                //     spiderTaskResult: { code: codes[Math.floor(Math.random() * codes.length)], company_id: 2, inquiry_record_id: 666, inquiry_material_id: 666, temp_data_id: 80 }
                 // });
 
                 // 随机暂停60-120秒后恢复轮询
@@ -156,13 +205,13 @@ const Poll = {
     // 返回首页
     async goHome() {
         const tabs = await chrome.tabs.query({
-            url: "*://*.ic.net.cn/*"  // 匹配【交易网】所有标签页
+            url: "*://*.m.ic.net.cn/*" // 匹配【交易网】所有标签页
         });
         if (tabs.length > 0) {
             const currentTab = tabs[tabs.length - 1];
             // 判断当前是否已经在首页
-            if (currentTab.url !== 'https://www.ic.net.cn/') {
-                await chrome.tabs.update(currentTab.id, { url: 'https://www.ic.net.cn/' });
+            if (currentTab.url !== 'https://m.ic.net.cn/') {
+                await chrome.tabs.update(currentTab.id, { url: 'https://m.ic.net.cn/' });
             }
         }
     }

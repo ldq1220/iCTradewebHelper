@@ -1,11 +1,38 @@
-// 1.2.0 版本 任务异常停止 不将任务返回
-// 1.1.8 版本 新增 模拟鼠标移入供应商 + 五分钟没有任务 返回首页
-// 1.1.6 版本 重写 恢复轮询
-// 1.1.5 版本 新增 账号被封禁 异常停止
+// 2.0.0 移动端采集
 // 直接引入 poll.js
 importScripts('js/poll.js');
 importScripts('js/icCrmApiBackground.js');
 importScripts('js/spiderApi.js');
+
+// 拦截接口响应
+chrome.declarativeNetRequest.updateDynamicRules({
+    removeRuleIds: [1, 2],
+    addRules: [
+        {
+            id: 1,
+            priority: 1,
+            action: { type: "allow" },
+            condition: {
+                urlFilter: "*://max.ic.net.cn/*",
+                resourceTypes: ["xmlhttprequest"]
+            }
+        },
+        {
+            id: 2,
+            priority: 2,
+            action: {
+                type: "redirect",
+                redirect: {
+                    regexSubstitution: "\\0" // 表示使用原始URL
+                }
+            },
+            condition: {
+                regexFilter: ".*://max\\.ic\\.net\\.cn/async/search\\.asy\\.php.*IC_Method=getstockdata.*",
+                resourceTypes: ["xmlhttprequest"]
+            }
+        }
+    ]
+});
 
 const gatherPlan = {
     jyw: false,
@@ -86,7 +113,7 @@ function deWeightSuppliers(suppliers) {
 // 监听来自content.js的消息  异常停止 
 chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
     if (message.action === "abnormalStop") {
-        const reasonExclude = ['触发易盾', '交易网账号被封禁']
+        const reasonExclude = ['交易网账号被封禁']
         // 回复spider server 数据
         if (message.spiderTaskResult && message.spiderTaskResult?.code && !reasonExclude.includes(message.reason)) {
             const { code, company_id, inquiry_material_id, inquiry_record_id, temp_data_id, task } = message.spiderTaskResult;
@@ -135,94 +162,111 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 // 插件安装时初始化
-chrome.runtime.onInstalled.addListener(() => {
-    chrome.storage.local.get(['isEnabled'], function (result) {
-        const isEnabled = result.isEnabled !== false && result.isEnabled !== undefined;
-        if (isEnabled) {
-            Poll.startPolling();
-        }
-    });
-});
+// chrome.runtime.onInstalled.addListener(() => {
+//     chrome.storage.local.get(['isEnabled'], function (result) {
+//         const isEnabled = result.isEnabled !== false && result.isEnabled !== undefined;
+//         if (isEnabled) {
+//             Poll.startPolling();
+//         }
+//     });
+// });
 
 // 浏览器启动时初始化
-chrome.runtime.onStartup.addListener(() => {
-    chrome.storage.local.get(['isEnabled'], function (result) {
-        const isEnabled = result.isEnabled !== false && result.isEnabled !== undefined;
-        if (isEnabled) {
-            Poll.startPolling();
-        }
-    });
-});
-
-// 监听 跳转至IC交易网搜索页面
-chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
-    if (request.action === "gotoJywSearchPage") {
-        const { inquiryRecordId, inquiryMaterialId, searchValue, companyId, tempDataId } = request;
-        gatherPlan.companyId = companyId;
-        gatherPlan.inquiryRecordId = inquiryRecordId;
-        gatherPlan.inquiryMaterialId = inquiryMaterialId;
-        gatherPlan.inquiryMaterialCode = searchValue;
-        gatherPlan.tempDataId = tempDataId;
-
-        const materialCode = handleEncodeURIComponent(searchValue?.trim());
-        const url = `https://www.ic.net.cn/search/${materialCode}.html`;
-        const jywTabsLastId = await handleJywTabsLastId();
-
-        await chrome.tabs.update(jywTabsLastId, { url: url });
-    }
-    if (request.action === "searchMaterial") {
-        const { inquiryRecordId, inquiryMaterialId, searchValue, companyId, tempDataId } = request;
-        gatherPlan.companyId = companyId;
-        gatherPlan.inquiryRecordId = inquiryRecordId;
-        gatherPlan.inquiryMaterialId = inquiryMaterialId;
-        gatherPlan.inquiryMaterialCode = searchValue;
-        gatherPlan.tempDataId = tempDataId;
-    }
-
-    sendResponse({ success: true });
-});
+// chrome.runtime.onStartup.addListener(() => {
+//     chrome.storage.local.get(['isEnabled'], function (result) {
+//         const isEnabled = result.isEnabled !== false && result.isEnabled !== undefined;
+//         if (isEnabled) {
+//             Poll.startPolling();
+//         }
+//     });
+// });
 
 // 清空数据
 chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
     if (request.action === "clearGatherPlan") {
         handleClearGatherPlan();
-        console.log('IC交易网一次轮询开始时：清空数据-----------', gatherPlan);
         sendResponse({ success: true });
     }
 });
 
-// 供应商采集结束
-chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
-    if (request.action === "suppliersGatherOver") {
-        const {
-            suppliersResult,
-            source,
-        } = request.suppliersGatherOverData;
-        const { success, data, error } = suppliersResult;
-
-        gatherPlan.jyw = true;
-        gatherPlan.jywSuppliers = data;
-
-        const deWeightTotalSuppliers = deWeightSuppliers(gatherPlan.jywSuppliers);
+// 监听来自content_script的消息
+chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
+    if (message.action === 'intercepted_response') {
+        const localResult = await chrome.storage.local.get(['isEnabled', 'spiderTaskResult'])
         const result = await chrome.storage.local.get(['environment', 'account']);
-        const body = {
-            companyId: gatherPlan.companyId,
-            inquiryMaterialId: gatherPlan.inquiryMaterialId,
-            inquiryRecordId: gatherPlan.inquiryRecordId,
-            suppliers: deWeightTotalSuppliers,
+        // 如果开关未打开
+        if (!localResult.isEnabled) {
+            return;
         }
 
-        console.log('【交易网】的数据全部采集完成！！！！！！！！', '\n 总数据: ', body, source);
+        // 如果spiderTaskResult不存在
+        if (!localResult.spiderTaskResult) {
+            return;
+        }
 
-        // 上报 创建临时数据
-        await ICCRMAPI.updateTempData(gatherPlan.tempDataId, { desc: `环境: ${result.environment}`, json_data_plugin: JSON.stringify(body) })
+        const { responseData } = message.suppliersInfo;
+        const stockList = tryParseJSON(responseData).stockList;
+        const { temp_data_id, company_id, inquiry_material_id, inquiry_record_id } = localResult.spiderTaskResult
+        const deWeightTotalSuppliers = deWeightSuppliers(tidyData(stockList, message.suppliersOrderInfo));
+        const body = {
+            companyId: company_id,
+            inquiryMaterialId: inquiry_material_id,
+            inquiryRecordId: inquiry_record_id,
+            suppliers: deWeightTotalSuppliers,
+        }
+        console.log('body---', body)
+        await ICCRMAPI.updateTempData(temp_data_id, { desc: `环境: ${result.environment}`, json_data_plugin: JSON.stringify(body) })
+        await chrome.storage.local.remove('spiderTaskResult');
 
-        handleClearGatherPlan()
-        // 跳转至【交易网】首页
-        // await sleep(Math.floor(Math.random() * (5000 - 2000 + 1) + 2000)); // 随机等待2-5秒
-        // const jywTabsLastId = await handleJywTabsLastId();
-        // await chrome.tabs.update(jywTabsLastId, { url: 'https://www.ic.net.cn' });
-
+        // 例如：修改响应数据，存储到本地，进行分析等
         sendResponse({ success: true });
     }
+
+    return true; // 保持消息通道开启
 });
+
+// 尝试解析JSON
+function tryParseJSON(str) {
+    try {
+        return JSON.parse(str);
+    } catch (e) {
+        return { error: '无法解析为JSON', rawData: str };
+    }
+}
+
+// 整理数据 
+function tidyData(suppliersList, suppliersOrderInfo) {
+    const result = suppliersList.map((item, index) => {
+        const { CompanyName, StockDate, ChipList, QQ1, QQ2 } = item
+        const firstChipList = ChipList?.[0] || {}
+        return {
+            id: index + 1,
+            companyName: CompanyName,
+            companyTag: [],
+            companyInfo: {},
+            materialId: [firstChipList.PartNo] || [],
+            materialTags: [],
+            brand: firstChipList.Mfg || '',
+            batchId: firstChipList.Dc || '',
+            totalNumber: firstChipList.Qty || '',
+            packaging: firstChipList.Pack || '',
+            storehouse: firstChipList.Location || '',
+            desc: firstChipList.Description || '',
+            qqAccount: [QQ1, QQ2].filter(Boolean),
+            source: 'jyw',
+            materialDate: StockDate.split(' ')[0]
+        }
+    })
+
+    for (const r of result) {
+        for (const i of suppliersOrderInfo) {
+            if (r.companyName === i.companyName) {
+                r.companyTag = i.companyTag
+                r.materialTags = i.materialTags
+                break;
+            }
+        }
+    }
+
+    return result
+}
