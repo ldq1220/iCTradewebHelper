@@ -1,3 +1,4 @@
+// 1.2.1 版本 优化
 // 1.2.0 版本 任务异常停止 不将任务返回
 // 1.1.8 版本 新增 模拟鼠标移入供应商 + 五分钟没有任务 返回首页
 // 1.1.6 版本 重写 恢复轮询
@@ -86,7 +87,7 @@ function deWeightSuppliers(suppliers) {
 // 监听来自content.js的消息  异常停止 
 chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
     if (message.action === "abnormalStop") {
-        const reasonExclude = ['触发易盾', '交易网账号被封禁']
+        const reasonExclude = ['交易网账号被封禁']
         // 回复spider server 数据
         if (message.spiderTaskResult && message.spiderTaskResult?.code && !reasonExclude.includes(message.reason)) {
             const { code, company_id, inquiry_material_id, inquiry_record_id, temp_data_id, task } = message.spiderTaskResult;
@@ -132,26 +133,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
 
     return true; // 保持消息通道开启
-});
-
-// 插件安装时初始化
-chrome.runtime.onInstalled.addListener(() => {
-    chrome.storage.local.get(['isEnabled'], function (result) {
-        const isEnabled = result.isEnabled !== false && result.isEnabled !== undefined;
-        if (isEnabled) {
-            Poll.startPolling();
-        }
-    });
-});
-
-// 浏览器启动时初始化
-chrome.runtime.onStartup.addListener(() => {
-    chrome.storage.local.get(['isEnabled'], function (result) {
-        const isEnabled = result.isEnabled !== false && result.isEnabled !== undefined;
-        if (isEnabled) {
-            Poll.startPolling();
-        }
-    });
 });
 
 // 监听 跳转至IC交易网搜索页面
