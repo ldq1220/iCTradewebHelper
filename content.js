@@ -78,7 +78,7 @@ const handleYidunAlarm = async (spiderTaskResult) => {
 const handleLoginAlarm = async (spiderTaskResult) => {
     let notLogin = false
     const result = await chrome.storage.local.get(['environment', 'account']);
-    const loginUrl = window.location.href.includes('login.php')
+    const loginUrl = window.location.href.includes('login')
 
     if (loginUrl) {
         chrome.runtime.sendMessage({
@@ -92,22 +92,6 @@ const handleLoginAlarm = async (spiderTaskResult) => {
     }
 
     return notLogin
-}
-
-// 处理账号被封禁
-const handleAccountBlocked = async (spiderTaskResult) => {
-    const isBlocked = await window.checkAccountIsBlocked()
-    const result = await chrome.storage.local.get(['environment', 'account']);
-    if (isBlocked) {
-        chrome.runtime.sendMessage({
-            action: "abnormalStop",
-            reason: "交易网账号被封禁",
-            spiderTaskResult: spiderTaskResult
-        });
-        sendNtfy(`【浏览器IC采集助手插件】：IC交易网账号被封禁，插件停止运行！！！ , 环境名：${result.environment} , 账号：${result.account} , spiderTaskResult：${JSON.stringify(spiderTaskResult)}`);
-    }
-
-    return isBlocked
 }
 
 // 注入拦截器脚本
@@ -130,7 +114,7 @@ window.addEventListener('message', async function (event) {
     // 确保消息来自同一个窗口
     if (event.source !== window) return;
 
-    // 检查消息类型
+    // 检查消息类型 - 拦截库存数据
     if (event.data && event.data.type === 'IC_HELPER_INTERCEPTED_RESPONSE') {
         sleep(1000)
 
@@ -144,6 +128,19 @@ window.addEventListener('message', async function (event) {
         });
 
         console.log('IC Helper: 已将拦截到的响应数据发送到插件');
+    }
+
+    // 检查消息类型 - 拦截新闻数据
+    if (event.data && event.data.type === 'IC_HELPER_INTERCEPTED_NEWS') {
+        sleep(1000)
+
+        // 发送消息到插件的background.js
+        chrome.runtime.sendMessage({
+            action: 'intercepted_news',
+            newsInfo: event.data
+        });
+
+        console.log('IC Helper: 已将拦截到的新闻数据发送到插件');
     }
 });
 

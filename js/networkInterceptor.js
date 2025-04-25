@@ -44,6 +44,27 @@
                         console.error('拦截响应出错:', error);
                     }
                 }
+
+                // 拦截新闻详情接口
+                if (this._url && this._url.includes('max.ic.net.cn/async/news.asy.php') &&
+                    this._url.includes('IC_Method=getOneNewsInfo')) {
+                    try {
+                        // 获取响应数据
+                        const responseData = this.responseText;
+
+                        // 发送消息到扩展
+                        window.postMessage({
+                            type: 'IC_HELPER_INTERCEPTED_NEWS',
+                            url: this._url,
+                            method: this._method,
+                            responseData: responseData
+                        }, '*');
+
+                        console.log('已拦截新闻API响应:', responseData);
+                    } catch (error) {
+                        console.error('拦截新闻响应出错:', error);
+                    }
+                }
             });
 
             // 调用原始的send方法
@@ -75,7 +96,7 @@
         // 调用原始的fetch
         const response = await originalFetch(input, init);
 
-        // 检查是否是目标请求
+        // 检查是否是目标请求 - 库存数据
         if (url && url.includes('max.ic.net.cn/async/search.asy.php') &&
             url.includes('IC_Method=getstockdata')) {
 
@@ -97,6 +118,31 @@
                 console.log('已拦截Fetch API响应:', responseData);
             } catch (error) {
                 console.error('拦截Fetch响应出错:', error);
+            }
+        }
+
+        // 检查是否是目标请求 - 新闻数据
+        if (url && url.includes('max.ic.net.cn/async/news.asy.php') &&
+            url.includes('IC_Method=getOneNewsInfo')) {
+
+            // 克隆响应以便可以多次读取body
+            const responseClone = response.clone();
+
+            try {
+                // 获取响应数据
+                const responseData = await responseClone.text();
+
+                // 发送消息到扩展
+                window.postMessage({
+                    type: 'IC_HELPER_INTERCEPTED_NEWS',
+                    url: url,
+                    method: init && init.method || 'GET',
+                    responseData: responseData
+                }, '*');
+
+                console.log('已拦截新闻Fetch API响应:', responseData);
+            } catch (error) {
+                console.error('拦截新闻Fetch响应出错:', error);
             }
         }
 
