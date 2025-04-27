@@ -470,10 +470,11 @@ window.getSuppliersOrderInfo = async function () {
                 const materialRzIconClassName = materialRzIcon.className
                 const materialRzIconClassNameLast = materialRzIconClassName.split(' ').pop()
                 const tidyClassName = {
-                    'icon-xhpm': 'icon_xianhuo',
-                    'icon-tj': 'i-tuijian-v2',
+                    'icon-xhpm': 'icon_xianHuo',
+                    'icon-tj': 'icon_tuiJian',
                     'icon-yx': 'icon_youXian',
-                    'icon-rm': 'icon_reMai'
+                    'icon-rm': 'icon_reMai',
+                    'icon-dhpm': 'icon_dingHuo'
                 }
                 suppliersOrderInfoItem.materialTags.push(tidyClassName[materialRzIconClassNameLast] || materialRzIconClassNameLast)
             }
