@@ -33,7 +33,7 @@ const Poll = {
             });
 
             console.log('交易网标签页:', tabs);
-            const spiderTaskResult = await SpiderApi.getSpliderTask();
+            // const spiderTaskResult = await SpiderApi.getSpliderTask();
             console.log('获取任务:', spiderTaskResult);
 
             if (spiderTaskResult && spiderTaskResult.code) {

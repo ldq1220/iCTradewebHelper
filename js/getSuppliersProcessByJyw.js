@@ -131,6 +131,9 @@ function summarizeSuppliers(supplierStore, inquiry_supplier_number) {
             }
             // 否则添加到Set中并保留这条数据
             seenCompanies.add(companyName);
+
+            delete item.company;
+            delete item.visibleLinks;
             return true;
         });
 

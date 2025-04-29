@@ -59,4 +59,7 @@ const SpiderApi = {
             method: 'GET'
         });
     }
-}
+};
+
+// 导出 SpiderApi 对象
+window.SpiderApi = SpiderApi;
