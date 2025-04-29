@@ -187,24 +187,12 @@ document.addEventListener('DOMContentLoaded', function () {
     // 从 storage 获取当前状态并初始化
     chrome.storage.local.get(['isEnabled'], async function (result) {
         console.log('isEnabled', result.isEnabled)
-        const isEnabled = result.isEnabled !== false && result.isEnabled !== undefined; // 默认为true
-
-        // 如果是启用状态
-        if (isEnabled && !validateInputs()) {
-            statusToggle.checked = false;
-            updateStatus(false);
-            return;
-        }
+        // 明确根据存储的值来设置，默认为false
+        const isEnabled = result.isEnabled === true;
 
         // 设置开关状态和UI
         statusToggle.checked = isEnabled;
         updateStatus(isEnabled);
-
-        // 发送状态到background
-        chrome.runtime.sendMessage({
-            action: 'toggleStatus',
-            isEnabled: isEnabled,
-        });
     });
 
     // 监听开关变化

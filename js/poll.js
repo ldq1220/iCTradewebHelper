@@ -12,6 +12,10 @@ const Poll = {
         goHomeTimeSumTime: 0, // 停止时间之和
     },
 
+    sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    },
+
     async loadConfig() {
         const result = await chrome.storage.local.get(['loopSecond', 'minPauseTime', 'maxPauseTime']);
         this.config.interval = result.loopSecond;
@@ -27,26 +31,52 @@ const Poll = {
                 action: "updateLastRunTime",
             });
 
-
-            // 检查当前是否在目标网站
-            const tabs = await chrome.tabs.query({
-                url: "*://*.m.ic.net.cn/*"  // 匹配【交易网】所有标签页
+            // 获取当前标签页
+            const currentBaiduTabs = await chrome.tabs.query({
+                url: "*://*.baidu.com/*"
             });
+            console.log('currentBaiduTabs', currentBaiduTabs)
+            const currentTab = currentBaiduTabs[0];
 
-            console.log('交易网标签页:', tabs);
+            // 获取任务
             const spiderTaskResult = await SpiderApi.getSpliderTask();
+            // const spiderTaskResult = { code: 'ADUM1200ARZ-RL7' }
             console.log('获取任务:', spiderTaskResult);
 
             if (spiderTaskResult && spiderTaskResult.code) {
+                await this.sleep(1000)
                 this.config.goHomeTimeSumTime = 0;
                 // 停止当前轮询
                 this.stopPolling();
 
+                // 更新当前页面到交易网
+                console.log('更新页面到交易网');
+                await chrome.tabs.update(currentTab.id, { url: 'https://m.ic.net.cn/' });
+
+                // 等待页面完全加载
+                console.log('等待页面完全加载');
+                await this.waitForPageLoad(currentTab.id);
+
+                console.log('页面已加载完成，准备发送消息');
+                // 再等待额外的时间确保内容脚本已准备好
+                await this.sleep(1000);
+
                 // 发送消息处理物料通知
-                await chrome.tabs.sendMessage(tabs[tabs.length - 1].id, {
-                    action: 'startPoll',
-                    spiderTaskResult: spiderTaskResult
-                });
+                try {
+                    await chrome.tabs.sendMessage(currentTab.id, {
+                        action: 'startPoll',
+                        spiderTaskResult: spiderTaskResult
+                    });
+                    console.log('已发送startPoll消息');
+                } catch (msgError) {
+                    console.error('发送消息失败:', msgError);
+                    // 如果发送失败，尝试再等待并重试
+                    await this.sleep(3000);
+                    await chrome.tabs.sendMessage(currentTab.id, {
+                        action: 'startPoll',
+                        spiderTaskResult: spiderTaskResult
+                    });
+                }
 
                 // 本地模拟数据
                 // const codes = [
@@ -98,12 +128,33 @@ const Poll = {
                 //     "08SR-3S",
                 //     "03SR-3S"
                 // ]
-                // await chrome.tabs.sendMessage(tabs[tabs.length - 1].id, {
+                // await chrome.tabs.sendMessage(currentTab.id, {
                 //     action: 'startPoll',
                 //     spiderTaskResult: { code: codes[Math.floor(Math.random() * codes.length)], company_id: 2, inquiry_record_id: 666, inquiry_material_id: 666, temp_data_id: 80 }
                 // });
 
-                // 随机暂停60-120秒后恢复轮询
+                // 监听任务完成消息
+                const taskCompletionPromise = new Promise(resolve => {
+                    const listener = (message, sender) => {
+                        if (message.action === 'taskCompleted' && sender.tab.id === currentTab.id) {
+                            chrome.runtime.onMessage.removeListener(listener);
+                            resolve();
+                        }
+                    };
+                    chrome.runtime.onMessage.addListener(listener);
+                });
+
+                // 等待任务完成 或 设置一个超时时间
+                const timeoutPromise = new Promise(resolve => setTimeout(resolve, 60000)); // 60秒超时
+                await Promise.race([taskCompletionPromise, timeoutPromise]);
+
+                // 任务完成后等待2秒
+                await this.sleep(2000);
+
+                // 返回百度首页
+                await chrome.tabs.update(currentTab.id, { url: 'https://www.baidu.com/' });
+
+                // 随机暂停后恢复轮询
                 const pauseTime = Math.floor(Math.random() *
                     (this.config.maxPauseTime - this.config.minPauseTime + 1) +
                     this.config.minPauseTime) * 1000;
@@ -119,7 +170,32 @@ const Poll = {
             }
         } catch (error) {
             console.log('轮询执行错误:', error);
+            // 发生错误后，延迟一段时间再尝试恢复轮询
+            const recoveryTime = 30; // 30秒后恢复
+            console.log(`由于错误，将在${recoveryTime}秒后尝试恢复轮询`);
+            this.pauseAndResumeLater(recoveryTime);
         }
+    },
+
+    // 等待页面完全加载的函数
+    waitForPageLoad(tabId) {
+        return new Promise((resolve) => {
+            const listener = (updatedTabId, changeInfo) => {
+                // 当状态变为 complete 时表示页面已完全加载
+                if (updatedTabId === tabId && changeInfo.status === 'complete') {
+                    chrome.tabs.onUpdated.removeListener(listener);
+                    resolve();
+                }
+            };
+
+            chrome.tabs.onUpdated.addListener(listener);
+
+            // 设置一个最大等待时间（15秒）以防止无限等待
+            setTimeout(() => {
+                chrome.tabs.onUpdated.removeListener(listener);
+                resolve();
+            }, 15000);
+        });
     },
 
     // 暂停轮询后恢复轮询

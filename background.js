@@ -1,3 +1,4 @@
+// 2.0.4 从百度跳转
 // 2.0.3 物料标签补充
 // 2.0.2 fix: 现货排名标签错误
 // 2.0.1 优化
@@ -176,13 +177,36 @@ async function handleAbnormalStop(reason, spiderTaskResult) {
 
 }
 
+// 初始化百度网站
+async function initBaiduTab() {
+    // 查找当前是否有百度标签页
+    const baiduTabs = await chrome.tabs.query({
+        url: "*://*.baidu.com/*"
+    });
+
+    // 如果没有百度标签页，创建一个
+    if (baiduTabs.length === 0) {
+        await chrome.tabs.create({
+            url: "https://www.baidu.com/",
+            active: true
+        });
+    } else {
+        // 如果有，激活第一个百度标签页
+        await chrome.tabs.update(baiduTabs[0].id, {
+            active: true
+        });
+    }
+}
+
 // 监听来自popup的消息
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === 'toggleStatus') {
         if (message.isEnabled) {
             console.log('开启插件 ',);
             Poll.config.abnormalStopped = false;
-            Poll.startPolling();
+            initBaiduTab().then(() => {
+                Poll.startPolling();
+            });
         } else {
             Poll.stopPolling();
         }
@@ -191,26 +215,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
     return true; // 保持消息通道开启
 });
-
-// 插件安装时初始化
-// chrome.runtime.onInstalled.addListener(() => {
-//     chrome.storage.local.get(['isEnabled'], function (result) {
-//         const isEnabled = result.isEnabled !== false && result.isEnabled !== undefined;
-//         if (isEnabled) {
-//             Poll.startPolling();
-//         }
-//     });
-// });
-
-// 浏览器启动时初始化
-// chrome.runtime.onStartup.addListener(() => {
-//     chrome.storage.local.get(['isEnabled'], function (result) {
-//         const isEnabled = result.isEnabled !== false && result.isEnabled !== undefined;
-//         if (isEnabled) {
-//             Poll.startPolling();
-//         }
-//     });
-// });
 
 // 清空数据
 chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {

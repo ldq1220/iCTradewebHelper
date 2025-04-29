@@ -128,6 +128,12 @@ window.addEventListener('message', async function (event) {
         });
 
         console.log('IC Helper: 已将拦截到的响应数据发送到插件');
+
+        // 任务完成后，通知background
+        await sleep(1000); // 等待数据处理完成
+        chrome.runtime.sendMessage({
+            action: 'taskCompleted'
+        });
     }
 
     // 检查消息类型 - 拦截新闻数据
