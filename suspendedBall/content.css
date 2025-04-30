@@ -1,6 +1,6 @@
 .ic-helper-float-ball {
   position: fixed !important;
-  right: 40px !important;
+  right: 60px !important;
   top: 58px !important;
   width: 48px !important;
   height: 48px !important;
@@ -28,7 +28,7 @@
 
 .ic-helper-menu {
   position: fixed !important;
-  right: 40px !important;
+  right: 60px !important;
   top: 116px !important; /* 悬浮球top(58) + height(48) + gap(10) */
   background: #fff !important;
   border-radius: 8px !important;

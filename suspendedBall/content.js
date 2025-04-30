@@ -178,6 +178,13 @@ function createFloatBall() {
     menu.appendChild(getTaskBtn);
     menu.appendChild(reportTaskBtn);
 
+    // 添加到页面
+    document.body.appendChild(floatBall);
+    document.body.appendChild(menu);
+
+    // 直接显示菜单
+    menu.classList.add('show');
+
     // 添加拖拽功能
     let isDragging = false;
     let startX, startY;
@@ -208,10 +215,8 @@ function createFloatBall() {
             floatBall.style.top = boundedTop + 'px';
 
             // 更新菜单位置
-            if (menu.classList.contains('show')) {
-                menu.style.right = boundedRight + 'px';
-                menu.style.top = (boundedTop + floatBall.offsetHeight + 10) + 'px';
-            }
+            menu.style.right = boundedRight + 'px';
+            menu.style.top = (boundedTop + floatBall.offsetHeight + 10) + 'px';
 
             lastRight = boundedRight;
             lastTop = boundedTop;
@@ -224,33 +229,6 @@ function createFloatBall() {
             floatBall.style.cursor = 'pointer';
         }
     });
-
-    // 添加点击事件（显示/隐藏菜单）
-    let menuVisible = false;
-    floatBall.addEventListener('mouseenter', function (e) {
-        if (!isDragging) {
-            menuVisible = !menuVisible;
-            menu.classList.toggle('show');
-
-            if (menuVisible) {
-                const ballRect = floatBall.getBoundingClientRect();
-                menu.style.right = (window.innerWidth - ballRect.right) + 'px';
-                menu.style.top = (ballRect.bottom + 10) + 'px';
-            }
-        }
-    });
-
-    // 点击其他地方关闭菜单
-    document.addEventListener('click', function (e) {
-        if (!floatBall.contains(e.target) && !menu.contains(e.target) && menuVisible) {
-            menuVisible = false;
-            menu.classList.remove('show');
-        }
-    });
-
-    // 添加到页面
-    document.body.appendChild(floatBall);
-    document.body.appendChild(menu);
 }
 
 // 确保DOM加载完成后创建悬浮球
