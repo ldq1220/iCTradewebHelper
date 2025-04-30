@@ -41,6 +41,16 @@ function createFloatBall() {
             getTaskBtn.classList.add('loading');
             getTaskIcon.style.opacity = '0.5';
 
+            const { currentTask } = await chrome.storage.local.get(['currentTask']);
+            if (currentTask) {
+                const toast = document.createElement('div');
+                toast.className = 'ic-helper-toast';
+                toast.textContent = `获取任务失败！有未上报的任务: ${currentTask.code}`;
+                document.body.appendChild(toast);
+                setTimeout(() => toast.remove(), 2000);
+                return;
+            }
+
             // 调用获取任务API
             let task = await SpiderApi.getSpliderTask();
             // const codes = [
@@ -185,49 +195,102 @@ function createFloatBall() {
     // 直接显示菜单
     menu.classList.add('show');
 
-    // 添加拖拽功能
+    // 添加拖拽功能 - 强制更新DOM
     let isDragging = false;
-    let startX, startY;
-    let lastRight = 40; // 默认右侧位置
-    let lastTop = 58; // 默认顶部位置
+    let offsetX = 0;
+    let offsetY = 0;
 
-    floatBall.addEventListener('mousedown', function (e) {
-        if (e.button === 0) { // 只响应左键
-            isDragging = true;
-            const rect = floatBall.getBoundingClientRect();
-            startX = e.clientX - (window.innerWidth - rect.right);
-            startY = e.clientY - rect.top;
-            floatBall.style.cursor = 'move';
-        }
+    // 鼠标按下事件
+    floatBall.addEventListener('mousedown', function (event) {
+        // 阻止默认行为和冒泡
+        event.preventDefault();
+        event.stopPropagation();
+
+        // 获取元素当前位置
+        const rect = floatBall.getBoundingClientRect();
+
+        // 计算鼠标点击位置相对于元素的偏移
+        offsetX = event.clientX - rect.left;
+        offsetY = event.clientY - rect.top;
+
+        // 标记开始拖拽
+        isDragging = true;
+
+        // 改变光标样式
+        document.body.style.cursor = 'move';
+        floatBall.style.cursor = 'move';
+
+        // 禁用过渡效果
+        floatBall.style.setProperty('transition', 'none', 'important');
+        menu.style.setProperty('transition', 'none', 'important');
     });
 
-    document.addEventListener('mousemove', function (e) {
-        if (isDragging) {
-            e.preventDefault();
-            const right = window.innerWidth - e.clientX + startX;
-            const top = e.clientY - startY;
+    // 鼠标移动事件
+    document.addEventListener('mousemove', function (event) {
+        if (!isDragging) return;
 
-            // 边界检查
-            const boundedRight = Math.max(0, Math.min(window.innerWidth - floatBall.offsetWidth, right));
-            const boundedTop = Math.max(0, Math.min(window.innerHeight - floatBall.offsetHeight, top));
+        // 阻止默认行为和冒泡
+        event.preventDefault();
+        event.stopPropagation();
 
-            floatBall.style.right = boundedRight + 'px';
-            floatBall.style.top = boundedTop + 'px';
+        // 计算新位置
+        let left = event.clientX - offsetX;
+        let top = event.clientY - offsetY;
 
-            // 更新菜单位置
-            menu.style.right = boundedRight + 'px';
-            menu.style.top = (boundedTop + floatBall.offsetHeight + 10) + 'px';
+        // 边界检查
+        const maxX = window.innerWidth - floatBall.offsetWidth;
+        const maxY = window.innerHeight - floatBall.offsetHeight;
 
-            lastRight = boundedRight;
-            lastTop = boundedTop;
-        }
+        left = Math.max(0, Math.min(maxX, left));
+        top = Math.max(0, Math.min(maxY, top));
+
+        // 计算right值
+        const right = window.innerWidth - left - floatBall.offsetWidth;
+
+        // 直接修改元素样式，强制使用!important
+        floatBall.style.setProperty('left', left + 'px', 'important');
+        floatBall.style.setProperty('top', top + 'px', 'important');
+        floatBall.style.setProperty('right', 'auto', 'important');
+
+        menu.style.setProperty('left', left + 'px', 'important');
+        menu.style.setProperty('top', (top + floatBall.offsetHeight + 10) + 'px', 'important');
+        menu.style.setProperty('right', 'auto', 'important');
+
+        // 强制重绘
+        void floatBall.offsetWidth;
+        void menu.offsetWidth;
     });
 
-    document.addEventListener('mouseup', function () {
-        if (isDragging) {
-            isDragging = false;
-            floatBall.style.cursor = 'pointer';
-        }
+    // 鼠标松开事件
+    document.addEventListener('mouseup', function (event) {
+        if (!isDragging) return;
+
+        // 阻止默认行为和冒泡
+        event.preventDefault();
+        event.stopPropagation();
+
+        // 结束拖拽
+        isDragging = false;
+
+        // 恢复光标样式
+        document.body.style.cursor = 'default';
+        floatBall.style.cursor = 'pointer';
+
+        // 恢复过渡效果
+        floatBall.style.setProperty('transition', 'all 0.3s ease', 'important');
+        menu.style.setProperty('transition', 'all 0.3s ease', 'important');
+    });
+
+    // 添加强制初始位置
+    window.addEventListener('load', function () {
+        // 确保初始位置设置正确
+        floatBall.style.setProperty('position', 'fixed', 'important');
+        floatBall.style.setProperty('top', '58px', 'important');
+        floatBall.style.setProperty('right', '60px', 'important');
+
+        menu.style.setProperty('position', 'fixed', 'important');
+        menu.style.setProperty('top', '116px', 'important');
+        menu.style.setProperty('right', '60px', 'important');
     });
 }
 

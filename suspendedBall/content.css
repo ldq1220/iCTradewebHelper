@@ -13,7 +13,8 @@
   align-items: center !important;
   justify-content: center !important;
   user-select: none !important;
-  transition: box-shadow 0.3s !important;
+  transition: none !important;
+  touch-action: none !important;
 }
 
 .ic-helper-float-ball img {
@@ -39,11 +40,13 @@
   user-select: none !important;
   margin: 0 !important;
   flex-direction: column !important; /* 改为纵向排列 */
+  transition: none !important;
+  touch-action: none !important;
 }
 
 .ic-helper-menu.show {
   display: flex !important;
-  gap: 8px !important;
+  gap: 18px !important;
   animation: ic-helper-menuFadeIn 0.2s ease-out !important;
 }
 
