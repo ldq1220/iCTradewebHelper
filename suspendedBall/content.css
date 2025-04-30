@@ -1,7 +1,7 @@
 .ic-helper-float-ball {
   position: fixed !important;
   right: 60px !important;
-  top: 58px !important;
+  top: 120px !important;
   width: 48px !important;
   height: 48px !important;
   background: #fff !important;
@@ -30,7 +30,7 @@
 .ic-helper-menu {
   position: fixed !important;
   right: 60px !important;
-  top: 116px !important; /* 悬浮球top(58) + height(48) + gap(10) */
+  top: 178px !important; /* 悬浮球top(120) + height(48) + gap(10) */
   background: #fff !important;
   border-radius: 8px !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
@@ -127,4 +127,67 @@
     opacity: 1;
     transform: translateX(-50%) translateY(0);
   }
+}
+
+.ic-helper-history-panel {
+  position: fixed !important;
+  width: 250px !important;
+  background: #fff !important;
+  border-radius: 12px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+  z-index: 2147483646 !important;
+  padding: 20px 16px !important;
+  display: none !important;
+  flex-direction: column !important;
+  transition: none !important;
+  border: 2px solid #f66700 !important;
+  overflow: hidden !important;
+}
+
+.ic-helper-history-panel.show {
+  display: flex !important;
+  animation: ic-helper-menuFadeIn 0.2s ease-out !important;
+}
+
+.ic-helper-history-empty {
+  padding: 20px !important;
+  text-align: center !important;
+  color: #999 !important;
+  font-size: 14px !important;
+}
+
+.ic-helper-history-item {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  padding: 10px 10px !important;
+  border-bottom: 1px solid #eee !important;
+}
+
+.ic-helper-history-item:last-child {
+  border-bottom: none !important;
+}
+
+.ic-helper-history-code {
+  color: #333 !important;
+  font-size: 14px !important;
+  font-weight: normal !important;
+  max-width: 140px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.ic-helper-history-status {
+  font-size: 14px !important;
+  font-weight: normal !important;
+  text-align: right !important;
+}
+
+.ic-helper-history-status.unreported {
+  color: #e74c3c !important;
+}
+
+.ic-helper-history-status.reported {
+  color: #2ecc71 !important;
 }

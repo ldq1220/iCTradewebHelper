@@ -29,6 +29,7 @@
                 "js/poll.js",
                 "js/getSuppliersProcessByJyw.js",
                 "js/icCrmApiBackground.js",
+                "content.js",
                 "suspendedBall/content.js"
             ],
             "run_at": "document_end"

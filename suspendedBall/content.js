@@ -26,6 +26,10 @@ function createFloatBall() {
     const menu = document.createElement('div');
     menu.className = 'ic-helper-menu';
 
+    // 创建历史记录面板
+    const historyPanel = document.createElement('div');
+    historyPanel.className = 'ic-helper-history-panel';
+
     // 创建获取任务按钮
     const getTaskBtn = document.createElement('div');
     getTaskBtn.className = 'ic-helper-menu-item';
@@ -99,6 +103,23 @@ function createFloatBall() {
             // 存储task数据
             await chrome.storage.local.set({ currentTask: task });
 
+            // 添加到历史记录
+            const { taskHistory = [] } = await chrome.storage.local.get(['taskHistory']);
+
+            // 添加新任务到历史记录前端
+            const newHistory = [
+                {
+                    code: task.code,
+                    hasReport: false
+                },
+                ...taskHistory
+            ].slice(0, 3); // 只保留最新的3条记录
+
+            await chrome.storage.local.set({ taskHistory: newHistory });
+
+            // 更新历史记录面板
+            updateHistoryPanel();
+
             try {
                 // 复制code到剪贴板
                 await navigator.clipboard.writeText(task.code);
@@ -165,6 +186,20 @@ function createFloatBall() {
             await chrome.storage.local.remove('currentTask');
             await ICCRMAPI.updateTempData(currentTask.temp_data_id, { desc: `环境: ${environment}`, json_data_plugin: JSON.stringify(body) })
 
+            // 更新历史记录中的状态
+            const { taskHistory = [] } = await chrome.storage.local.get(['taskHistory']);
+            const updatedHistory = taskHistory.map(item => {
+                if (item.code === currentTask.code) {
+                    return { ...item, hasReport: true };
+                }
+                return item;
+            });
+
+            await chrome.storage.local.set({ taskHistory: updatedHistory });
+
+            // 更新历史记录面板
+            updateHistoryPanel();
+
             const toast = document.createElement('div');
             toast.className = 'ic-helper-toast';
             toast.textContent = '上报成功';
@@ -185,15 +220,57 @@ function createFloatBall() {
         }
     });
 
+    // 更新历史记录面板
+    async function updateHistoryPanel() {
+        // 获取历史记录
+        const { taskHistory = [] } = await chrome.storage.local.get(['taskHistory']);
+
+        // 清空面板
+        historyPanel.innerHTML = '';
+
+        if (taskHistory.length === 0) {
+            const emptyMsg = document.createElement('div');
+            emptyMsg.className = 'ic-helper-history-empty';
+            emptyMsg.textContent = '暂无任务历史';
+            historyPanel.appendChild(emptyMsg);
+            return;
+        }
+
+        // 创建历史记录列表
+        taskHistory.forEach((task, index) => {
+            const taskItem = document.createElement('div');
+            taskItem.className = 'ic-helper-history-item';
+
+            const taskCode = document.createElement('div');
+            taskCode.className = 'ic-helper-history-code';
+            taskCode.textContent = task.code;
+
+            const taskStatus = document.createElement('div');
+            taskStatus.className = task.hasReport ?
+                'ic-helper-history-status reported' :
+                'ic-helper-history-status unreported';
+            taskStatus.textContent = task.hasReport ? '已上报' : '未上报';
+
+            taskItem.appendChild(taskCode);
+            taskItem.appendChild(taskStatus);
+            historyPanel.appendChild(taskItem);
+        });
+    }
+
     menu.appendChild(getTaskBtn);
     menu.appendChild(reportTaskBtn);
 
     // 添加到页面
     document.body.appendChild(floatBall);
     document.body.appendChild(menu);
+    document.body.appendChild(historyPanel);
 
-    // 直接显示菜单
+    // 直接显示菜单和历史面板
     menu.classList.add('show');
+    historyPanel.classList.add('show');
+
+    // 初始化历史记录面板
+    updateHistoryPanel();
 
     // 添加拖拽功能 - 强制更新DOM
     let isDragging = false;
@@ -223,6 +300,7 @@ function createFloatBall() {
         // 禁用过渡效果
         floatBall.style.setProperty('transition', 'none', 'important');
         menu.style.setProperty('transition', 'none', 'important');
+        historyPanel.style.setProperty('transition', 'none', 'important');
     });
 
     // 鼠标移动事件
@@ -256,9 +334,15 @@ function createFloatBall() {
         menu.style.setProperty('top', (top + floatBall.offsetHeight + 10) + 'px', 'important');
         menu.style.setProperty('right', 'auto', 'important');
 
+        // 更新历史面板位置 - 放在悬浮球左侧
+        historyPanel.style.setProperty('left', (left - historyPanel.offsetWidth - 10) + 'px', 'important');
+        historyPanel.style.setProperty('top', top + 'px', 'important');
+        historyPanel.style.setProperty('right', 'auto', 'important');
+
         // 强制重绘
         void floatBall.offsetWidth;
         void menu.offsetWidth;
+        void historyPanel.offsetWidth;
     });
 
     // 鼠标松开事件
@@ -279,18 +363,28 @@ function createFloatBall() {
         // 恢复过渡效果
         floatBall.style.setProperty('transition', 'all 0.3s ease', 'important');
         menu.style.setProperty('transition', 'all 0.3s ease', 'important');
+        historyPanel.style.setProperty('transition', 'all 0.3s ease', 'important');
     });
 
     // 添加强制初始位置
     window.addEventListener('load', function () {
         // 确保初始位置设置正确
         floatBall.style.setProperty('position', 'fixed', 'important');
-        floatBall.style.setProperty('top', '58px', 'important');
+        floatBall.style.setProperty('top', '120px', 'important');
         floatBall.style.setProperty('right', '60px', 'important');
+        floatBall.style.setProperty('left', 'auto', 'important');
 
         menu.style.setProperty('position', 'fixed', 'important');
-        menu.style.setProperty('top', '116px', 'important');
+        menu.style.setProperty('top', '178px', 'important');
         menu.style.setProperty('right', '60px', 'important');
+        menu.style.setProperty('left', 'auto', 'important');
+
+        // 初始化历史记录面板位置 - 放在悬浮球左侧
+        const rect = floatBall.getBoundingClientRect();
+        historyPanel.style.setProperty('position', 'fixed', 'important');
+        historyPanel.style.setProperty('top', rect.top + 'px', 'important');
+        historyPanel.style.setProperty('left', (rect.left - historyPanel.offsetWidth - 10) + 'px', 'important');
+        historyPanel.style.setProperty('right', 'auto', 'important');
     });
 }
 

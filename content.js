@@ -1,5 +1,5 @@
 // 检查当前页面是否为目标网站
-const IC_URL = ['www.ic.net.cn', 'member.ic.net.cn', 'www.hqew.com', 's.hqew.com', 'www.szlcsc.com', 'so.szlcsc.com'];
+const IC_URL_CONTENT = ['www.ic.net.cn', 'member.ic.net.cn'];
 
 window.setInterval = function () { };
 Function.prototype.__constructor_back = Function.prototype.constructor;
@@ -113,7 +113,7 @@ const handleAccountBlocked = async (spiderTaskResult) => {
     return isBlocked
 }
 
-if (IC_URL.includes(window.location.hostname)) {
+if (IC_URL_CONTENT.includes(window.location.hostname)) {
     // 获取URL中的查询参数
     const urlParams = new URLSearchParams(window.location.search);
     const query = {};
@@ -123,109 +123,21 @@ if (IC_URL.includes(window.location.hostname)) {
         query[key] = value;
     }
 
-    // 添加消息监听器
-    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-        if (message.action === 'startPoll') {
-            (async () => {
-                try {
-                    // 存储当前时间  存储当前任务
-                    await chrome.storage.local.set({ lastPollTime: new Date().toLocaleString(), spiderTaskResult: message.spiderTaskResult });
-
-                    // 检查是否触发易盾
-                    const hasYidun = await handleYidunAlarm(message.spiderTaskResult)
-                    if (hasYidun) return sendResponse({ success: false, error: '触发易盾' });
-
-                    // 检查是否处于未登录状态
-                    const notLogin = await handleLoginAlarm(message.spiderTaskResult)
-                    if (notLogin) return sendResponse({ success: false, error: '未登录状态' });
-
-                    // 通知background.js 先清空数据
-                    if (window.location.hostname.includes('ic.net.cn')) {
-                        chrome.runtime.sendMessage({ action: "clearGatherPlan" });
-                    }
-
-                    await handleInquiryTask(message.spiderTaskResult); // 等待异步任务完成
-                    sendResponse({ success: true });
-                } catch (error) {
-                    logger.error('轮询过程发生错误:', error);
-                    sendResponse({
-                        success: false,
-                        error: error.message || '执行过程发生错误'
-                    });
-                }
-            })();
-
-            return true; // 保持消息通道开启
-        }
-    });
-
-
-    // 处理询料任务
-    async function handleInquiryTask(spiderTaskResult) {
-        try {
-            // 先清除上一次的状态
-            await chrome.storage.local.remove('executeGetSuppliersProcess');
-            const { code, company_id, inquiry_material_id, inquiry_record_id, temp_data_id } = spiderTaskResult;
-
-            // 设置执行状态并跳转
-            await chrome.storage.local.set({ executeGetSuppliersProcess: true });
-            await sleep(2000);
-
-            // 先通过js 填充输入框 点击搜索按钮  如果不成功 直接跳转
-            const success = await window.searchMaterial(code)
-            await chrome.runtime.sendMessage({
-                action: success ? "searchMaterial" : "gotoJywSearchPage",
-                inquiryRecordId: inquiry_record_id,
-                inquiryMaterialId: inquiry_material_id,
-                searchValue: code,
-                companyId: company_id,
-                tempDataId: temp_data_id
-            });
-        } catch (error) {
-            logger.error('处理询料任务时发生错误:', error);
-        }
-    }
-
     // 页面加载完成后  检测状态  获取供应商信息
     window.addEventListener('load', async () => {
-        await sleep(2000); // 等待2秒
+        console.log('页面加载完毕，检查账号状态...')
+        const result = await chrome.storage.local.get(['currentTask']);
 
-        await chrome.storage.local.get(['executeGetSuppliersProcess'], async (result) => {
-            if (result.executeGetSuppliersProcess) {
-                await chrome.storage.local.remove('executeGetSuppliersProcess');  // 执行后清除状态
+        // 检查是否触发易盾
+        const hasYidun = await handleYidunAlarm(result.currentTask)
+        if (hasYidun) return
 
-                // 获取当前任务
-                const result = await chrome.storage.local.get('spiderTaskResult');
-                // 检查是否触发易盾
-                const hasYidun = await handleYidunAlarm(result.spiderTaskResult)
-                if (hasYidun) return
+        // 检查是否处于未登录状态
+        const notLogin = await handleLoginAlarm(result.currentTask)
+        if (notLogin) return
 
-                // 检查是否处于未登录状态
-                const notLogin = await handleLoginAlarm(result.spiderTaskResult)
-                if (notLogin) return
-
-                let suppliersResult = await getSuppliersProcessByJyw(); // 获取【交易网】供应商信息
-                logger.info('获取供应商信息执行任务结果:', suppliersResult);
-
-                // 校验是否被封禁。
-                if (suppliersResult.data.length === 0) {
-                    const isBlocked = await handleAccountBlocked(result.spiderTaskResult)
-                    if (isBlocked) return
-                }
-
-                const suppliersGatherOverData = {
-                    suppliersResult,
-                    source: window.location.hostname,
-                }
-                console.log('供应商采集结束发送消息通道 suppliersGatherOverData', suppliersGatherOverData);
-                chrome.runtime.sendMessage({ action: "suppliersGatherOver", suppliersGatherOverData });
-
-                console.log('开始模拟滚动和移入供应商')
-                // 模拟滚动
-                await window.scrollToBottom()
-                // 模拟鼠标移入供应商   
-                await window.mouseMoveSupplier()
-            }
-        });
+        // 检查账号是否被封禁
+        const isBlocked = await handleAccountBlocked(result.currentTask)
+        if (isBlocked) return
     })
 }
