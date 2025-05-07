@@ -364,28 +364,80 @@ function createFloatBall() {
         floatBall.style.setProperty('transition', 'all 0.3s ease', 'important');
         menu.style.setProperty('transition', 'all 0.3s ease', 'important');
         historyPanel.style.setProperty('transition', 'all 0.3s ease', 'important');
+
+        // 保存位置到 chrome.storage.local
+        const ballRect = floatBall.getBoundingClientRect();
+        const position = {
+            left: ballRect.left,
+            top: ballRect.top
+        };
+        chrome.storage.local.set({ ballPosition: position });
     });
+
+    // 从 chrome.storage.local 中获取并应用保存的位置
+    async function initBallPosition() {
+        try {
+            // 获取保存的位置
+            const { ballPosition } = await chrome.storage.local.get(['ballPosition']);
+
+            // 如果有保存的位置，则应用
+            if (ballPosition) {
+                // 应用悬浮球位置
+                floatBall.style.setProperty('position', 'fixed', 'important');
+                floatBall.style.setProperty('top', ballPosition.top + 'px', 'important');
+                floatBall.style.setProperty('left', ballPosition.left + 'px', 'important');
+                floatBall.style.setProperty('right', 'auto', 'important');
+
+                // 更新菜单位置
+                menu.style.setProperty('position', 'fixed', 'important');
+                menu.style.setProperty('top', (ballPosition.top + floatBall.offsetHeight + 10) + 'px', 'important');
+                menu.style.setProperty('left', ballPosition.left + 'px', 'important');
+                menu.style.setProperty('right', 'auto', 'important');
+
+                // 更新历史面板位置
+                historyPanel.style.setProperty('position', 'fixed', 'important');
+                historyPanel.style.setProperty('top', ballPosition.top + 'px', 'important');
+                historyPanel.style.setProperty('left', (ballPosition.left - historyPanel.offsetWidth - 10) + 'px', 'important');
+                historyPanel.style.setProperty('right', 'auto', 'important');
+
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('获取保存位置失败:', error);
+            return false;
+        }
+    }
 
     // 添加强制初始位置
-    window.addEventListener('load', function () {
-        // 确保初始位置设置正确
-        floatBall.style.setProperty('position', 'fixed', 'important');
-        floatBall.style.setProperty('top', '120px', 'important');
-        floatBall.style.setProperty('right', '60px', 'important');
-        floatBall.style.setProperty('left', 'auto', 'important');
+    window.addEventListener('load', async function () {
+        // 先尝试获取保存的位置
+        const hasPosition = await initBallPosition();
 
-        menu.style.setProperty('position', 'fixed', 'important');
-        menu.style.setProperty('top', '178px', 'important');
-        menu.style.setProperty('right', '60px', 'important');
-        menu.style.setProperty('left', 'auto', 'important');
+        // 如果没有保存的位置，使用默认位置
+        if (!hasPosition) {
+            // 确保初始位置设置正确
+            floatBall.style.setProperty('position', 'fixed', 'important');
+            floatBall.style.setProperty('top', '120px', 'important');
+            floatBall.style.setProperty('right', '60px', 'important');
+            floatBall.style.setProperty('left', 'auto', 'important');
 
-        // 初始化历史记录面板位置 - 放在悬浮球左侧
-        const rect = floatBall.getBoundingClientRect();
-        historyPanel.style.setProperty('position', 'fixed', 'important');
-        historyPanel.style.setProperty('top', rect.top + 'px', 'important');
-        historyPanel.style.setProperty('left', (rect.left - historyPanel.offsetWidth - 10) + 'px', 'important');
-        historyPanel.style.setProperty('right', 'auto', 'important');
+            menu.style.setProperty('position', 'fixed', 'important');
+            menu.style.setProperty('top', '178px', 'important');
+            menu.style.setProperty('right', '60px', 'important');
+            menu.style.setProperty('left', 'auto', 'important');
+
+            // 初始化历史记录面板位置 - 放在悬浮球左侧
+            const rect = floatBall.getBoundingClientRect();
+            historyPanel.style.setProperty('position', 'fixed', 'important');
+            historyPanel.style.setProperty('top', rect.top + 'px', 'important');
+            historyPanel.style.setProperty('left', (rect.left - historyPanel.offsetWidth - 10) + 'px', 'important');
+            historyPanel.style.setProperty('right', 'auto', 'important');
+        }
     });
+
+    // 初始化悬浮球位置
+    initBallPosition();
 }
 
 // 确保DOM加载完成后创建悬浮球

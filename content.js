@@ -127,6 +127,7 @@ if (IC_URL_CONTENT.includes(window.location.hostname)) {
     window.addEventListener('load', async () => {
         console.log('页面加载完毕，检查账号状态...')
         const result = await chrome.storage.local.get(['currentTask']);
+        if (!result.currentTask) return
 
         // 检查是否触发易盾
         const hasYidun = await handleYidunAlarm(result.currentTask)
