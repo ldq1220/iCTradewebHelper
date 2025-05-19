@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "IC Helper",
-    "version": "3.0.0",
+    "version": "3.0.1",
     "description": "IC交易网助手（手动上报）",
     "icons": {
         "16": "icons/icon16.png",

@@ -108,6 +108,8 @@ const handleAccountBlocked = async (spiderTaskResult) => {
             spiderTaskResult: spiderTaskResult
         });
         sendNtfy(`【浏览器IC采集助手插件】：IC交易网账号被封禁，插件停止运行！！！ , 环境名：${result.environment} , 账号：${result.account} , spiderTaskResult：${JSON.stringify(spiderTaskResult)}`);
+
+        window.open('https://www.baidu.com', '_blank');
     }
 
     return isBlocked
