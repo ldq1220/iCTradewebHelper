@@ -1,6 +1,6 @@
 const SpiderApi = {
     async request(endpoint, options = {}) {
-        const spiderBaseUrl = 'https://ic-spider2.we5.fun/api'; // 将 base URL 封装在这里
+        const spiderBaseUrl = 'https://ic-spider.we5.fun/api'; // 将 base URL 封装在这里
 
         const xApiKey = 'U2FsdGVkX1+NZULLdP'
 

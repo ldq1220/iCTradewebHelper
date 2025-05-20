@@ -87,7 +87,7 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
         // 回复spider server 数据
         if (message.spiderTaskResult && message.spiderTaskResult?.code && !reasonExclude.includes(message.reason)) {
             const { code, company_id, inquiry_material_id, inquiry_record_id, temp_data_id, task } = message.spiderTaskResult;
-            await fetch('https://ic-spider2.we5.fun/api/search', {
+            await fetch('https://ic-spider.we5.fun/api/search', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

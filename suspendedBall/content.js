@@ -1,6 +1,17 @@
 // 检查当前页面是否为目标网站
 const IC_URL = ['www.ic.net.cn', 'member.ic.net.cn'];
 
+function sendNtfyByBall(msg) {
+    fetch('https://ntfy.we5.fun/prod_gemel', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'text/plain'
+        },
+        body: msg
+    })
+}
+
+
 // 创建悬浮球
 function createFloatBall() {
     // 检查是否在允许的网站内
@@ -160,11 +171,19 @@ function createFloatBall() {
     // 添加上报任务点击事件
     reportTaskBtn.addEventListener('click', async function () {
         try {
+            const { currentTask, environment } = await chrome.storage.local.get(['currentTask', 'environment', 'account']);
+            // 校验页面
+            const herf = window.location.href;
+            if (!herf.includes('https://www.ic.net.cn/search')) {
+                sendNtfyByBall(`【浏览器IC采集助手插件】：环境名: ${environment} , 当前页面不是IC交易网搜索页面，无法上报任务！！！，请及时处理。`);
+                window.open('https://www.baidu.com', '_blank');
+                return
+            }
+
             // 添加loading状态
             reportTaskBtn.classList.add('loading');
             reportTaskIcon.style.opacity = '0.5';
 
-            const { currentTask, environment } = await chrome.storage.local.get(['currentTask', 'environment', 'account']);
             if (!currentTask) {
                 const toast = document.createElement('div');
                 toast.className = 'ic-helper-toast';
@@ -210,7 +229,7 @@ function createFloatBall() {
             console.error('上报任务失败:', error);
             const toast = document.createElement('div');
             toast.className = 'ic-helper-toast';
-            toast.textContent = '上报失败';
+            toast.textContent = `上报失败: ${JSON.stringify(error)}`;
             document.body.appendChild(toast);
             setTimeout(() => toast.remove(), 2000);
         } finally {
