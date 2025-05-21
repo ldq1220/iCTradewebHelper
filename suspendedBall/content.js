@@ -171,11 +171,21 @@ function createFloatBall() {
     // 添加上报任务点击事件
     reportTaskBtn.addEventListener('click', async function () {
         try {
-            const { currentTask, environment } = await chrome.storage.local.get(['currentTask', 'environment', 'account']);
+            const { currentTask, environment } = await chrome.storage.local.get(['currentTask', 'environment']);
             // 校验页面
             const herf = window.location.href;
             if (!herf.includes('https://www.ic.net.cn/search')) {
                 sendNtfyByBall(`【浏览器IC采集助手插件】：环境名: ${environment} , 当前页面不是IC交易网搜索页面，无法上报任务！！！，请及时处理。`);
+                window.open('https://www.baidu.com', '_blank');
+                return
+            }
+
+            // 校验搜索物料 是否为 当前任务的物料
+            const topsearchBox = document.querySelector('.topsearchBox')
+            searchInput = topsearchBox.querySelector('.topsch_input')
+            const searchMaterialCode = searchInput.value
+            if (searchMaterialCode !== currentTask.code) {
+                sendNtfyByBall(`【浏览器IC采集助手插件】：环境名: ${environment} , 当前搜索物料: ${searchMaterialCode} 不是当前任务的物料: ${currentTask.code}，无法上报任务！！！，请及时处理。`);
                 window.open('https://www.baidu.com', '_blank');
                 return
             }
