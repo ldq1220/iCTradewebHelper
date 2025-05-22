@@ -172,23 +172,6 @@ function createFloatBall() {
     reportTaskBtn.addEventListener('click', async function () {
         try {
             const { currentTask, environment } = await chrome.storage.local.get(['currentTask', 'environment']);
-            // 校验页面
-            const herf = window.location.href;
-            if (!herf.includes('https://www.ic.net.cn/search')) {
-                sendNtfyByBall(`【浏览器IC采集助手插件】：环境名: ${environment} , 当前页面不是IC交易网搜索页面，无法上报任务！！！，请及时处理。`);
-                window.open('https://www.baidu.com', '_blank');
-                return
-            }
-
-            // 校验搜索物料 是否为 当前任务的物料
-            const topsearchBox = document.querySelector('.topsearchBox')
-            searchInput = topsearchBox.querySelector('.topsch_input')
-            const searchMaterialCode = searchInput.value
-            if (searchMaterialCode !== currentTask.code) {
-                sendNtfyByBall(`【浏览器IC采集助手插件】：环境名: ${environment} , 当前搜索物料: ${searchMaterialCode} 不是当前任务的物料: ${currentTask.code}，无法上报任务！！！，请及时处理。`);
-                window.open('https://www.baidu.com', '_blank');
-                return
-            }
 
             // 添加loading状态
             reportTaskBtn.classList.add('loading');
@@ -201,6 +184,24 @@ function createFloatBall() {
                 document.body.appendChild(toast);
                 setTimeout(() => toast.remove(), 2000);
                 return;
+            }
+
+            // 校验页面
+            const herf = window.location.href;
+            if (!herf.includes('https://www.ic.net.cn/search')) {
+                sendNtfyByBall(`【浏览器IC采集助手插件】：环境名: ${environment} , 当前页面不是IC交易网搜索页面，无法上报任务！！！，请及时处理。`);
+                window.open('https://www.baidu.com', '_blank');
+                return
+            }
+
+            // 校验搜索物料 是否为 当前任务的物料
+            const topsearchBox = document.querySelector('.topsearchBox')
+            searchInput = topsearchBox.querySelector('.topsch_input')
+            const searchMaterialCode = searchInput.value.trim()
+            if (!currentTask.code.toUpperCase().trim().includes(searchMaterialCode)) {
+                sendNtfyByBall(`【浏览器IC采集助手插件】：环境名: ${environment} , 当前搜索物料: ${searchMaterialCode} 不是当前任务的物料: ${currentTask.code}，无法上报任务！！！，请及时处理。`);
+                window.open('https://www.baidu.com', '_blank');
+                return
             }
 
             const deWeightTotalSuppliers = await window.getSuppliersProcessByJyw();
@@ -218,7 +219,7 @@ function createFloatBall() {
             // 更新历史记录中的状态
             const { taskHistory = [] } = await chrome.storage.local.get(['taskHistory']);
             const updatedHistory = taskHistory.map(item => {
-                if (item.code === currentTask.code) {
+                if (currentTask.code.includes(item.code)) {
                     return { ...item, hasReport: true };
                 }
                 return item;
