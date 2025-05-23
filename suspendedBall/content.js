@@ -89,7 +89,7 @@ function createFloatBall() {
             //     "AT32F403ZGT6",
             //     "ADIS16210CMLZ"
             // ]
-            // task = {
+            // let task = {
             //     code: codes[Math.floor(Math.random() * codes.length)],
             //     company_id: 2,
             //     inquiry_material_id: 666,
@@ -301,6 +301,60 @@ function createFloatBall() {
 
     // 初始化历史记录面板
     updateHistoryPanel();
+
+    // 使用CSS类控制显示/隐藏
+    function updateReportButtonVisibility(isEnabled) {
+        console.log('更新上报按钮显示状态:', isEnabled);
+        if (isEnabled) {
+            reportTaskBtn.classList.add('ic-helper-hidden');
+        } else {
+            reportTaskBtn.classList.remove('ic-helper-hidden');
+        }
+    }
+
+    // 监听storage变化
+    chrome.storage.onChanged.addListener((changes, namespace) => {
+        if (namespace === 'local' && changes.isEnabled) {
+            updateReportButtonVisibility(changes.isEnabled.newValue);
+        }
+
+        // 监听历史记录变化
+        if (namespace === 'local' && changes.taskHistory) {
+            updateHistoryPanel();
+        }
+    });
+
+    // 监听来自popup的消息
+    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+        if (message.type === 'TOGGLE_STATUS') {
+            updateReportButtonVisibility(message.isEnabled);
+        }
+
+        // 接收历史记录更新通知
+        if (message.action === 'updateHistoryPanel' && message.taskHistory) {
+            console.log('收到更新历史记录消息:', message.taskHistory);
+            chrome.storage.local.set({ taskHistory: message.taskHistory }, () => {
+                // 更新历史记录面板
+                updateHistoryPanel();
+            });
+            return true; // 保持消息通道开放
+        }
+    });
+
+    // 初始化时检查开关状态
+    chrome.storage.local.get(['isEnabled'], function (result) {
+        const isEnabled = result.isEnabled !== false && result.isEnabled !== undefined;
+        updateReportButtonVisibility(isEnabled);
+    });
+
+    // 添加上报按钮隐藏的样式
+    const style = document.createElement('style');
+    style.textContent = `
+        .ic-helper-hidden {
+            display: none !important;
+        }
+    `;
+    document.head.appendChild(style);
 
     // 添加拖拽功能 - 强制更新DOM
     let isDragging = false;

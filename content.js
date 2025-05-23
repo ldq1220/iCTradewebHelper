@@ -115,6 +115,102 @@ const handleAccountBlocked = async (spiderTaskResult) => {
     return isBlocked
 }
 
+// 自动上报任务
+async function autoReportTask() {
+    try {
+        logger.info('开始自动上报任务...');
+        const { currentTask, environment } = await chrome.storage.local.get(['currentTask', 'environment']);
+
+        if (!currentTask) {
+            logger.info('当前没有可上报的任务');
+            return false;
+        }
+
+        // 校验页面
+        const href = window.location.href;
+        if (!href.includes('https://www.ic.net.cn/search')) {
+            sendNtfy(`【浏览器IC采集助手插件】：环境名: ${environment} , 当前页面不是IC交易网搜索页面，无法上报任务！！！，请及时处理。`);
+            logger.error('当前页面不是IC交易网搜索页面，无法上报任务');
+            return false;
+        }
+
+        // 校验搜索物料是否为当前任务的物料
+        const topsearchBox = document.querySelector('.topsearchBox');
+        if (!topsearchBox) {
+            logger.error('找不到搜索框元素');
+            return false;
+        }
+
+        const searchInput = topsearchBox.querySelector('.topsch_input');
+        if (!searchInput) {
+            logger.error('找不到搜索输入框元素');
+            return false;
+        }
+
+        const searchMaterialCode = searchInput.value.trim();
+        if (!currentTask.code.toUpperCase().trim().includes(searchMaterialCode)) {
+            sendNtfy(`【浏览器IC采集助手插件】：环境名: ${environment} , 当前搜索物料: ${searchMaterialCode} 不是当前任务的物料: ${currentTask.code}，无法上报任务！！！，请及时处理。`);
+            logger.error('当前搜索物料与任务不匹配');
+            return false;
+        }
+
+        // 获取供应商数据
+        const deWeightTotalSuppliers = await window.getSuppliersProcessByJyw();
+        const body = {
+            companyId: currentTask.company_id,
+            inquiryMaterialId: currentTask.inquiry_material_id,
+            inquiryRecordId: currentTask.inquiry_record_id,
+            suppliers: deWeightTotalSuppliers.data,
+        };
+
+        logger.info('上报任务结果:', body);
+
+        // 清除当前任务
+        await chrome.storage.local.remove('currentTask');
+
+        // 上报数据
+        await ICCRMAPI.updateTempData(currentTask.temp_data_id, {
+            desc: `环境: ${environment}`,
+            json_data_plugin: JSON.stringify(body)
+        });
+
+        // 更新历史记录中的状态
+        const { taskHistory = [] } = await chrome.storage.local.get(['taskHistory']);
+        const updatedHistory = taskHistory.map(item => {
+            if (currentTask.code.includes(item.code)) {
+                return { ...item, hasReport: true };
+            }
+            return item;
+        });
+
+        // 先保存更新后的历史记录
+        await chrome.storage.local.set({ taskHistory: updatedHistory });
+
+        // 通知更新历史记录面板
+        try {
+            chrome.runtime.sendMessage({
+                action: "updateHistoryPanel",
+                taskHistory: updatedHistory
+            });
+        } catch (err) {
+            console.error('发送更新消息失败:', err);
+        }
+
+        // 显示上报成功提示
+        const toast = document.createElement('div');
+        toast.className = 'ic-helper-toast';
+        toast.textContent = '自动上报成功';
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 2000);
+
+        logger.info('自动上报任务成功');
+        return true;
+    } catch (error) {
+        logger.error('自动上报任务失败', error);
+        return false;
+    }
+}
+
 if (IC_URL_CONTENT.includes(window.location.hostname)) {
     // 获取URL中的查询参数
     const urlParams = new URLSearchParams(window.location.search);
@@ -128,7 +224,7 @@ if (IC_URL_CONTENT.includes(window.location.hostname)) {
     // 页面加载完成后  检测状态  获取供应商信息
     window.addEventListener('load', async () => {
         console.log('页面加载完毕，检查账号状态...')
-        const result = await chrome.storage.local.get(['currentTask']);
+        const result = await chrome.storage.local.get(['currentTask', 'isEnabled']);
         if (!result.currentTask) return
 
         // 检查是否触发易盾
@@ -142,5 +238,14 @@ if (IC_URL_CONTENT.includes(window.location.hostname)) {
         // 检查账号是否被封禁
         const isBlocked = await handleAccountBlocked(result.currentTask)
         if (isBlocked) return
+
+        // 自动上报 - 检查是否开启自动模式
+        const isEnabled = result.isEnabled !== false && result.isEnabled !== undefined;
+        if (isEnabled) {
+            logger.info('自动模式已开启，准备自动上报...');
+            await autoReportTask();
+        } else {
+            logger.info('手动模式，不执行自动上报');
+        }
     })
 }
