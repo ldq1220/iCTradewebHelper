@@ -147,7 +147,7 @@ async function autoReportTask() {
             return false;
         }
 
-        const searchMaterialCode = searchInput.value.trim();
+        const searchMaterialCode = searchInput.value.toUpperCase().trim();
         if (!currentTask.code.toUpperCase().trim().includes(searchMaterialCode)) {
             sendNtfy(`【浏览器IC采集助手插件】：环境名: ${environment} , 当前搜索物料: ${searchMaterialCode} 不是当前任务的物料: ${currentTask.code}，无法上报任务！！！，请及时处理。`);
             logger.error('当前搜索物料与任务不匹配');
