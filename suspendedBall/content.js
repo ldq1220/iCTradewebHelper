@@ -197,7 +197,7 @@ function createFloatBall() {
             // 校验搜索物料 是否为 当前任务的物料
             const topsearchBox = document.querySelector('.topsearchBox')
             searchInput = topsearchBox.querySelector('.topsch_input')
-            const searchMaterialCode = searchInput.value.trim()
+            const searchMaterialCode = searchInput.value.trim().toUpperCase()
             if (!currentTask.code.toUpperCase().trim().includes(searchMaterialCode)) {
                 sendNtfyByBall(`【浏览器IC采集助手插件】：环境名: ${environment} , 当前搜索物料: ${searchMaterialCode} 不是当前任务的物料: ${currentTask.code}，无法上报任务！！！，请及时处理。`);
                 window.open('https://www.baidu.com', '_blank');
