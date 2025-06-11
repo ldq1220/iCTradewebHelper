@@ -230,10 +230,10 @@ window.getSuppliersProcessByJyw = function () {
                             if (materialIdText) elementData.materialId.push(materialIdText);
                         });
                         // 物料标签
-                        const materialTags = resultIdElement.querySelectorAll('a');
+                        const materialTags = resultIdElement.querySelectorAll('span');
                         materialTags.forEach(tag => {
-                            const tagClassName = tag.querySelector('span')?.className;
-                            if (tagClassName) elementData.materialTags.push(tagClassName);
+                            const tagClassName = tag?.className;
+                            if (tagClassName && tagClassName.includes('icon')) elementData.materialTags.push(tagClassName);
                         });
                     }
 
