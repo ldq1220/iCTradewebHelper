@@ -330,6 +330,10 @@ const updateGrabData = async (currentTask, environment, platform) => {
     toast.textContent = "自动上报成功";
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 2000);
+
+    // 自动获取下一个任务
+    sleep(500)
+    await autoGetNextTask(platform)
 }
 
 
@@ -367,8 +371,5 @@ if (IC_URL_CONTENT.includes(window.location.hostname)) {
         const isEnabled =
             result.isEnabled !== false && result.isEnabled !== undefined;
         if (isEnabled) await autoReportTask(platform);
-
-        // 自动获取下一个任务
-        if (isEnabled) await autoGetNextTask(platform)
     });
 }
