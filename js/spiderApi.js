@@ -1,7 +1,6 @@
 const SpiderApi = {
     async request(endpoint, options = {}) {
         const spiderBaseUrl = 'https://ic-spider.we5.fun/api'; // 将 base URL 封装在这里
-
         const xApiKey = 'U2FsdGVkX1+NZULLdP'
 
         const defaultOptions = {
@@ -54,9 +53,12 @@ const SpiderApi = {
 
 
     // 获取任务
-    async getSpliderTask() {
+    async getSpliderTask(platform) {
         return this.request(`/task-get`, {
-            method: 'GET'
+            method: 'POST',
+            body: {
+                platform
+            }
         });
     }
 };

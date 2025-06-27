@@ -1,8 +1,8 @@
 {
     "manifest_version": 3,
     "name": "IC Helper",
-    "version": "4.0.2",
-    "description": "IC交易网助手（手动上报）",
+    "version": "4.0.3",
+    "description": "IC交易网助手（自动上报）",
     "icons": {
         "16": "icons/icon16.png",
         "48": "icons/icon48.png",
@@ -25,9 +25,10 @@
                 "suspendedBall/content.css"
             ],
             "js": [
+                "js/utils.js",
                 "js/spiderApi.js",
-                "js/poll.js",
                 "js/getSuppliersProcessByJyw.js",
+                "js/getSuppliersProcessByHqw.js",
                 "js/icCrmApiBackground.js",
                 "content.js",
                 "suspendedBall/content.js"
@@ -44,7 +45,8 @@
         "tabs"
     ],
     "host_permissions": [
-        "*://www.ic.net.cn/*"
+        "*://www.ic.net.cn/*",
+        "*://s.hqew.com/*"
     ],
     "web_accessible_resources": [
         {

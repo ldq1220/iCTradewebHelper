@@ -13,6 +13,9 @@ function summarizeSuppliers(supplierStore, inquiry_supplier_number) {
             }
             // 否则添加到Set中并保留这条数据
             seenCompanies.add(companyName);
+
+            delete item.company;
+            delete item.visibleLinks;
             return true;
         });
 
@@ -29,6 +32,7 @@ window.getSuppliersProcessByHqw = function () {
     return new Promise((resolve) => {
         try {
             const supplierStore = [];
+            let total = 0
             const ecDataTrElements = document.getElementsByClassName('ec-data');
 
             if (ecDataTrElements.length === 0) {
@@ -97,7 +101,6 @@ window.getSuppliersProcessByHqw = function () {
 
                     // 获取物料标签
                     const materialTagsElement = ecDataTr.querySelector('.td-model-data').nextElementSibling;
-                    console.log('materialTagsElement', materialTagsElement);
 
                     if (materialTagsElement) {
                         const tagClassName = materialTagsElement.querySelector('i')?.className;
@@ -165,6 +168,11 @@ window.getSuppliersProcessByHqw = function () {
 
                 processedCount = end;
 
+                // 总数
+                const filterBarDom = document.getElementById('filter_bar')
+                const gcr = filterBarDom.querySelector('.page .g-c-r')
+                total = Number(gcr.innerText)
+
                 if (processedCount < totalElements) {
                     requestAnimationFrame(processBatch);
                 } else {
@@ -173,6 +181,7 @@ window.getSuppliersProcessByHqw = function () {
                     resolve({
                         success: true,
                         data: supplierStoreuppliers,
+                        total: total,
                         error: null,
                         getAllCompanyNames: function () {
                             return this.data.reduce(

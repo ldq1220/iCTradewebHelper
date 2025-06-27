@@ -154,8 +154,8 @@ const ICCRMAPI = {
     },
 
     // 更新临时数据
-    async updateTempData(id, data) {
-        return this.request(`/temp_data:update?filterByTk=${id}`, {
+    async updateGrabData(id, data) {
+        return this.request(`/grab_datas:update?filterByTk=${id}`, {
             method: 'POST',
             body: data
         });

@@ -154,6 +154,7 @@ window.getSuppliersProcessByJyw = function () {
     return new Promise((resolve) => {
         try {
             const supplierStore = [];
+            let total = 0
             const stairTrElements = document.getElementsByClassName('stair_tr');
 
             if (stairTrElements.length === 0) {
@@ -309,6 +310,10 @@ window.getSuppliersProcessByJyw = function () {
                     supplierStore.push(elementData);
                 }
 
+                // 总数结果
+                const icCountDom = document.getElementById('icCount')
+                total = Number(icCountDom.innerText)
+
                 processedCount = end;
 
                 if (processedCount < totalElements) {
@@ -319,6 +324,7 @@ window.getSuppliersProcessByJyw = function () {
                     resolve({
                         success: true,
                         data: supplierStoreuppliers,
+                        total: total,
                         error: null,
                         getAllCompanyNames: function () {
                             return this.data.reduce(

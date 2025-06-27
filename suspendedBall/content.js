@@ -1,5 +1,5 @@
 // 检查当前页面是否为目标网站
-const IC_URL = ['www.ic.net.cn', 'member.ic.net.cn'];
+const IC_URL = ['www.ic.net.cn', 'member.ic.net.cn', 's.hqew.com'];
 
 function sendNtfyByBall(msg) {
     fetch('https://ntfy.we5.fun/prod_gemel', {
@@ -23,6 +23,8 @@ function createFloatBall() {
     if (document.querySelector('.ic-helper-float-ball')) {
         return;
     }
+
+    const platform = window.UTILS.getCurrentPlatform();
 
     // 创建悬浮球容器
     const floatBall = document.createElement('div');
@@ -65,9 +67,8 @@ function createFloatBall() {
                 setTimeout(() => toast.remove(), 2000);
                 return;
             }
-
             // 调用获取任务API
-            let task = await SpiderApi.getSpliderTask();
+            let task = await SpiderApi.getSpliderTask(platform);
             // const codes = [
             //     'LTM4644IY',
             //     'STM32F407VET6',
@@ -91,13 +92,7 @@ function createFloatBall() {
             // ]
             // let task = {
             //     code: codes[Math.floor(Math.random() * codes.length)],
-            //     company_id: 2,
-            //     inquiry_material_id: 666,
-            //     inquiry_record_id: 666,
-            //     temp_data_id: 80,
-            //     task: [
-            //         "jyw"
-            //     ]
+            //     grab_data_id: 1,
             // }
 
             // 检查task.code是否为空
@@ -176,45 +171,72 @@ function createFloatBall() {
             // 添加loading状态
             reportTaskBtn.classList.add('loading');
             reportTaskIcon.style.opacity = '0.5';
+            if (platform === 'jyw') {
+                if (!currentTask) {
+                    const toast = document.createElement('div');
+                    toast.className = 'ic-helper-toast';
+                    toast.textContent = '当前没有可上报的任务，请先获取任务';
+                    document.body.appendChild(toast);
+                    setTimeout(() => toast.remove(), 2000);
+                    return;
+                }
 
-            if (!currentTask) {
-                const toast = document.createElement('div');
-                toast.className = 'ic-helper-toast';
-                toast.textContent = '当前没有可上报的任务，请先获取任务';
-                document.body.appendChild(toast);
-                setTimeout(() => toast.remove(), 2000);
-                return;
+                // 校验页面
+                const herf = window.location.href;
+                if (!herf.includes('https://www.ic.net.cn/search')) {
+                    sendNtfyByBall(`【浏览器IC采集助手插件】：环境名: ${environment} , 当前页面不是IC交易网搜索页面，无法上报任务！！！，请及时处理。`);
+                    window.open('https://www.baidu.com', '_blank');
+                    return
+                }
+
+                // 校验搜索物料 是否为 当前任务的物料
+                const topsearchBox = document.querySelector('.topsearchBox')
+                searchInput = topsearchBox.querySelector('.topsch_input')
+                const searchMaterialCode = searchInput.value.toUpperCase().trim()
+                if (!currentTask.code.toUpperCase().trim().includes(searchMaterialCode)) {
+                    sendNtfyByBall(`【浏览器IC采集助手插件】：环境名: ${environment} , 当前搜索物料: ${searchMaterialCode} 不是当前任务的物料: ${currentTask.code}，无法上报任务！！！，请及时处理。`);
+                    window.open('https://www.baidu.com', '_blank');
+                    return
+                }
             }
 
-            // 校验页面
-            const herf = window.location.href;
-            if (!herf.includes('https://www.ic.net.cn/search')) {
-                sendNtfyByBall(`【浏览器IC采集助手插件】：环境名: ${environment} , 当前页面不是IC交易网搜索页面，无法上报任务！！！，请及时处理。`);
-                window.open('https://www.baidu.com', '_blank');
-                return
+            if (platform === 'hqw') {
+                const JInputSearch = document.getElementById('J_inputSearch')
+                const JInputSearchValue = JInputSearch.value.toUpperCase().trim()
+                if (!currentTask.code.toUpperCase().trim().includes(JInputSearchValue)) {
+                    sendNtfy(
+                        `【浏览器IC采集助手插件】： 🚀平台：${platform} , 环境名: ${environment} , 当前搜索物料: ${JInputSearchValue} 不是当前任务的物料: ${currentTask.code}，无法上报任务！！！，请及时处理。`,
+                    );
+                    return false;
+                }
             }
 
-            // 校验搜索物料 是否为 当前任务的物料
-            const topsearchBox = document.querySelector('.topsearchBox')
-            searchInput = topsearchBox.querySelector('.topsch_input')
-            const searchMaterialCode = searchInput.value.trim()
-            if (!currentTask.code.toUpperCase().trim().includes(searchMaterialCode)) {
-                sendNtfyByBall(`【浏览器IC采集助手插件】：环境名: ${environment} , 当前搜索物料: ${searchMaterialCode} 不是当前任务的物料: ${currentTask.code}，无法上报任务！！！，请及时处理。`);
-                window.open('https://www.baidu.com', '_blank');
-                return
+
+            const updateGrabBody = {}
+            const deWeightTotalSuppliers = platform === 'jyw' ? await window.getSuppliersProcessByJyw() : await window.getSuppliersProcessByHqw()
+            if (platform === 'jyw') {
+                Object.assign(updateGrabBody, {
+                    jyw_data: {
+                        total: deWeightTotalSuppliers.total,
+                        source: platform,
+                        suppliers: deWeightTotalSuppliers.data
+                    },
+                    jyw_data_from: environment
+                })
+            } else if (platform === 'hqw') {
+                Object.assign(updateGrabBody, {
+                    hqw_data: {
+                        total: deWeightTotalSuppliers.total,
+                        source: platform,
+                        suppliers: deWeightTotalSuppliers.data
+                    },
+                    hqw_data_from: environment
+                })
             }
 
-            const deWeightTotalSuppliers = await window.getSuppliersProcessByJyw();
-            const body = {
-                companyId: currentTask.company_id,
-                inquiryMaterialId: currentTask.inquiry_material_id,
-                inquiryRecordId: currentTask.inquiry_record_id,
-                suppliers: deWeightTotalSuppliers.data,
-            }
-            console.log('上报任务结果:', body);
-
+            console.log('上报任务结果:', platform, environment, updateGrabBody);
+            await ICCRMAPI.updateGrabData(currentTask.grab_data_id, updateGrabBody)
             await chrome.storage.local.remove('currentTask');
-            await ICCRMAPI.updateTempData(currentTask.temp_data_id, { desc: `环境: ${environment}`, json_data_plugin: JSON.stringify(body) })
 
             // 更新历史记录中的状态
             const { taskHistory = [] } = await chrome.storage.local.get(['taskHistory']);
