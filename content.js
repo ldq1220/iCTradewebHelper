@@ -1,5 +1,5 @@
 // 检查当前页面是否为目标网站
-const IC_URL_CONTENT = ["www.ic.net.cn", "member.ic.net.cn", "s.hqew.com"];
+const IC_URL_CONTENT = ["www.ic.net.cn", "member.ic.net.cn", "www.hqew.com", "s.hqew.com"];
 
 window.setInterval = function () { };
 Function.prototype.__constructor_back = Function.prototype.constructor;
@@ -131,6 +131,80 @@ const handleAccountBlocked = async (spiderTaskResult) => {
     return isBlocked;
 };
 
+// 自动获取下一个任务
+async function autoGetNextTask(platform) {
+    try {
+        const task = await SpiderApi.getSpliderTask(platform);
+
+        // 检查task.code是否为空
+        if (!task || !task.code) {
+            logger.info("暂无采集任务");
+            // 显示提示
+            const toast = document.createElement("div");
+            toast.className = "ic-helper-toast";
+            toast.textContent = "暂无采集任务";
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 2000);
+            return false;
+        }
+
+        // 存储task数据
+        await chrome.storage.local.set({ currentTask: task });
+
+        // 添加到历史记录
+        const { taskHistory = [] } = await chrome.storage.local.get(['taskHistory']);
+
+        // 添加新任务到历史记录前端
+        const newHistory = [
+            {
+                code: task.code,
+                hasReport: false
+            },
+            ...taskHistory
+        ].slice(0, 3); // 只保留最新的3条记录
+
+        await chrome.storage.local.set({ taskHistory: newHistory });
+
+        // 通知更新历史记录面板
+        try {
+            chrome.runtime.sendMessage({
+                action: "updateHistoryPanel",
+                taskHistory: newHistory,
+            });
+        } catch (err) {
+            console.error("发送更新消息失败:", err);
+        }
+
+        try {
+            // 复制code到剪贴板
+            await navigator.clipboard.writeText(task.code);
+
+            // 显示复制成功提示
+            const toast = document.createElement("div");
+            toast.className = "ic-helper-toast";
+            toast.textContent = `自动获取任务成功，已复制：${task.code}`;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+
+            logger.info(`自动获取任务成功：${task.code}`);
+            return true;
+        } catch (error) {
+            console.error('复制失败:', error);
+            // 显示复制失败提示
+            const toast = document.createElement("div");
+            toast.className = "ic-helper-toast";
+            toast.textContent = `自动获取任务成功：${task.code}，但复制失败，请手动复制`;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+            return true;
+        }
+
+    } catch (error) {
+        logger.error("自动获取下一个任务失败", error);
+        return false;
+    }
+}
+
 // 自动上报任务
 async function autoReportTask(platform) {
     try {
@@ -256,7 +330,6 @@ const updateGrabData = async (currentTask, environment, platform) => {
     toast.textContent = "自动上报成功";
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 2000);
-
 }
 
 
@@ -294,5 +367,8 @@ if (IC_URL_CONTENT.includes(window.location.hostname)) {
         const isEnabled =
             result.isEnabled !== false && result.isEnabled !== undefined;
         if (isEnabled) await autoReportTask(platform);
+
+        // 自动获取下一个任务
+        if (isEnabled) await autoGetNextTask(platform)
     });
 }

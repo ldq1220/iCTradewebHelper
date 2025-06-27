@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "IC Helper",
-    "version": "4.0.3",
+    "version": "4.0.4",
     "description": "IC交易网助手（自动上报）",
     "icons": {
         "16": "icons/icon16.png",
@@ -46,6 +46,7 @@
     ],
     "host_permissions": [
         "*://www.ic.net.cn/*",
+        "*://www.hqew.com/*",
         "*://s.hqew.com/*"
     ],
     "web_accessible_resources": [

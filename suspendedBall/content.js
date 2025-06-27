@@ -1,5 +1,5 @@
 // 检查当前页面是否为目标网站
-const IC_URL = ['www.ic.net.cn', 'member.ic.net.cn', 's.hqew.com'];
+const IC_URL = ['www.ic.net.cn', 'member.ic.net.cn', 'www.hqew.com', 's.hqew.com'];
 
 function sendNtfyByBall(msg) {
     fetch('https://ntfy.we5.fun/prod_gemel', {
