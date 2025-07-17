@@ -227,9 +227,10 @@ window.getSuppliersProcessByJyw = function () {
                         const productNumbers =
                             resultIdElement.querySelectorAll('.product_number');
                         productNumbers.forEach((product) => {
-                            const materialIdText = product.textContent.trim();
-                            if (materialIdText) elementData.materialId.push(materialIdText);
+                            const materialIdText = product.getAttribute('title');
+                            if (materialIdText) elementData.materialId.push(materialIdText.trim());
                         });
+
                         // 物料标签
                         const materialTags = resultIdElement.querySelectorAll('span');
                         materialTags.forEach(tag => {
