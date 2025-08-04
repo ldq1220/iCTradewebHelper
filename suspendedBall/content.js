@@ -297,6 +297,31 @@ function createFloatBall() {
             taskCode.className = 'ic-helper-history-code';
             taskCode.textContent = task.code;
 
+            // 添加点击复制功能
+            taskCode.style.cursor = 'pointer';
+            taskCode.title = '点击复制物料代码';
+            taskCode.addEventListener('click', async function () {
+                try {
+                    // 复制code到剪贴板
+                    await navigator.clipboard.writeText(task.code);
+
+                    // 显示复制成功提示
+                    const toast = document.createElement('div');
+                    toast.className = 'ic-helper-toast';
+                    toast.textContent = `已复制：${task.code}`;
+                    document.body.appendChild(toast);
+                    setTimeout(() => toast.remove(), 2000);
+                } catch (error) {
+                    console.error('复制失败:', error);
+                    // 显示复制失败提示
+                    const toast = document.createElement('div');
+                    toast.className = 'ic-helper-toast';
+                    toast.textContent = '复制失败，请手动复制';
+                    document.body.appendChild(toast);
+                    setTimeout(() => toast.remove(), 2000);
+                }
+            });
+
             const taskStatus = document.createElement('div');
             taskStatus.className = task.hasReport ?
                 'ic-helper-history-status reported' :
