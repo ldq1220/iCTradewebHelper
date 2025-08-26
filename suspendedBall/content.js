@@ -134,7 +134,9 @@ function createFloatBall() {
                 const toast = document.createElement('div');
                 toast.className = 'ic-helper-toast';
                 toast.textContent = `复制成功：${task.code}`;
-                document.body.appendChild(toast);
+                document.body.appendChild(toast)
+
+                platform === 'jyw' ? await window.autoFocusInputByJyw() : await window.autoFocusInputByHqw()
                 setTimeout(() => toast.remove(), 2000);
             } catch (error) {
                 console.error('复制失败:', error);
