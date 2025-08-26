@@ -187,6 +187,8 @@ async function autoGetNextTask(platform) {
             setTimeout(() => toast.remove(), 3000);
 
             logger.info(`自动获取任务成功：${task.code}`);
+            platform === 'jyw' ? await window.autoFocusInputByJyw() : await window.autoFocusInputByHqw()
+
             return true;
         } catch (error) {
             console.error('复制失败:', error);

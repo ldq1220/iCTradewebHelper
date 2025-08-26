@@ -221,3 +221,11 @@ window.getSuppliersProcessByHqw = function () {
         }
     });
 };
+
+// 物料搜索输入框自动获取焦点
+window.autoFocusInputByHqw = async function () {
+    const JInputSearch = document.getElementById('J_inputSearch')
+    if (JInputSearch) {
+        JInputSearch.focus()
+    }
+}
