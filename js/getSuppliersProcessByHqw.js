@@ -229,3 +229,11 @@ window.autoFocusInputByHqw = async function () {
         JInputSearch.focus()
     }
 }
+
+// 清空输入框内容
+window.clearInputByHqw = async function () {
+    const JInputSearch = document.getElementById('J_inputSearch')
+    if (JInputSearch) {
+        JInputSearch.value = ''
+    }
+}

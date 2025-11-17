@@ -188,6 +188,7 @@ async function autoGetNextTask(platform) {
 
             logger.info(`自动获取任务成功：${task.code}`);
             platform === 'jyw' ? await window.autoFocusInputByJyw() : await window.autoFocusInputByHqw()
+            platform === 'jyw' ? await window.clearInputByJyw() : await window.clearInputByHqw()
 
             return true;
         } catch (error) {
@@ -241,9 +242,15 @@ async function autoReportTask(platform) {
 
             const searchMaterialCode = searchInput.value.toUpperCase().trim();
             if (!currentTask.code.toUpperCase().trim().includes(searchMaterialCode)) {
-                sendNtfy(
-                    `【浏览器IC采集助手插件】： 🚀平台：${platform} , 环境名: ${environment} , 当前搜索物料: ${searchMaterialCode} 不是当前任务的物料: ${currentTask.code}，无法上报任务！！！，请及时处理。`,
-                );
+                // sendNtfy(
+                //     `【浏览器IC采集助手插件】： 🚀平台：${platform} , 环境名: ${environment} , 当前搜索物料: ${searchMaterialCode} 不是当前任务的物料: ${currentTask.code}，无法上报任务！！！，请及时处理。`,
+                // );
+                const toast = document.createElement("div");
+                toast.className = "ic-helper-toast";
+                toast.textContent = `当前搜索物料: ${searchMaterialCode} 不是当前任务的物料: ${currentTask.code}，无法上报任务！！！，请重新搜索。`;
+                document.body.appendChild(toast);
+                setTimeout(() => toast.remove(), 3000);
+
                 return false;
             }
         }

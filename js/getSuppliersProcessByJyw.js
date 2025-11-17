@@ -486,3 +486,22 @@ window.autoFocusInputByJyw = async function () {
         searchInput.focus()
     }
 }
+
+// 清空输入框内容
+window.clearInputByJyw = async function () {
+    const href = window.location.href
+    const isSearchPage = href.includes('search')
+    let searchInput = null
+
+    if (isSearchPage) {
+        const topsearchBox = document.querySelector('.topsearchBox')
+        searchInput = topsearchBox.querySelector('.topsch_input')
+    } else {
+        const head_searchMain = document.querySelector('.head_searchMain')
+        searchInput = head_searchMain.querySelector('.head_searchInput')
+    }
+
+    if (searchInput) {
+        searchInput.value = ''
+    }
+}

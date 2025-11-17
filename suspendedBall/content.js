@@ -137,6 +137,8 @@ function createFloatBall() {
                 document.body.appendChild(toast)
 
                 platform === 'jyw' ? await window.autoFocusInputByJyw() : await window.autoFocusInputByHqw()
+                platform === 'jyw' ? await window.clearInputByJyw() : await window.clearInputByHqw()
+
                 setTimeout(() => toast.remove(), 2000);
             } catch (error) {
                 console.error('复制失败:', error);
@@ -311,6 +313,9 @@ function createFloatBall() {
                     const toast = document.createElement('div');
                     toast.className = 'ic-helper-toast';
                     toast.textContent = `已复制：${task.code}`;
+                    platform === 'jyw' ? await window.autoFocusInputByJyw() : await window.autoFocusInputByHqw()
+                    platform === 'jyw' ? await window.clearInputByJyw() : await window.clearInputByHqw()
+
                     document.body.appendChild(toast);
                     setTimeout(() => toast.remove(), 2000);
                 } catch (error) {
