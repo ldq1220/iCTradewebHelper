@@ -88,11 +88,12 @@ function createFloatBall() {
             //     "TMS320F28335PGFA",
             //     "ADM2587EBRWZ",
             //     "AT32F403ZGT6",
-            //     "ADIS16210CMLZ"
+            //     "ADIS16210CMLZ",
             // ]
             // let task = {
             //     code: codes[Math.floor(Math.random() * codes.length)],
             //     grab_data_id: 1,
+            //     task: ['jyw']
             // }
 
             // 检查task.code是否为空

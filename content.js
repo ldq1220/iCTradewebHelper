@@ -71,6 +71,23 @@ const handleYidunAlarm = async (spiderTaskResult) => {
             reason: "触发易盾",
             spiderTaskResult: spiderTaskResult,
         });
+        const { code, grab_data_id, task } = spiderTaskResult;
+        await fetch('https://ic-spider.we5.fun/api/search', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': 'U2FsdGVkX1+NZULLdP'
+            },
+            body: JSON.stringify({
+                materials: [
+                    {
+                        code,
+                        grab_data_id,
+                        task
+                    }
+                ]
+            })
+        })
         sendNtfy(
             `【浏览器IC采集助手插件】：IC交易网触发易盾，插件停止运行！！！ , 环境名：${result.environment
             } , 账号：${result.account} , spiderTaskResult：${JSON.stringify(
