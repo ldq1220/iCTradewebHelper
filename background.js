@@ -80,10 +80,10 @@ function deWeightSuppliers(suppliers) {
 // 监听来自content.js的消息  异常停止 
 chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
     if (message.action === "abnormalStop") {
-        const reasonExclude = ['交易网账号被封禁']
+        const reasonExclude = ['交易网账号被封禁', '触发易盾']
         // 回复spider server 数据
         if (message.spiderTaskResult && message.spiderTaskResult?.code && !reasonExclude.includes(message.reason)) {
-            const { code, company_id, inquiry_material_id, inquiry_record_id, grab_data_id, task } = message.spiderTaskResult;
+            const { code, grab_data_id, task } = message.spiderTaskResult;
             await fetch('https://ic-spider.we5.fun/api/search', {
                 method: 'POST',
                 headers: {
@@ -94,9 +94,6 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
                     materials: [
                         {
                             code,
-                            company_id,
-                            inquiry_material_id,
-                            inquiry_record_id,
                             grab_data_id,
                             task
                         }
