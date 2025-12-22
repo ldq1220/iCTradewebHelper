@@ -259,13 +259,13 @@ async function autoReportTask(platform) {
 
             const searchMaterialCode = searchInput.value.toUpperCase().trim();
             if (!currentTask.code.toUpperCase().trim().includes(searchMaterialCode)) {
-                // sendNtfy(
-                //     `【浏览器IC采集助手插件】： 🚀平台：${platform} , 环境名: ${environment} , 当前搜索物料: ${searchMaterialCode} 不是当前任务的物料: ${currentTask.code}，无法上报任务！！！，请及时处理。`,
-                // );
                 const toast = document.createElement("div");
                 toast.className = "ic-helper-toast";
                 toast.textContent = `当前搜索物料: ${searchMaterialCode} 不是当前任务的物料: ${currentTask.code}，无法上报任务！！！，请重新搜索。`;
                 document.body.appendChild(toast);
+
+                await window.autoFocusInputByJyw()
+                await navigator.clipboard.writeText(currentTask.code);
                 setTimeout(() => toast.remove(), 3000);
 
                 return false;
@@ -276,9 +276,15 @@ async function autoReportTask(platform) {
             const JInputSearch = document.getElementById('J_inputSearch')
             const JInputSearchValue = JInputSearch.value.toUpperCase().trim()
             if (!currentTask.code.toUpperCase().trim().includes(JInputSearchValue)) {
-                sendNtfy(
-                    `【浏览器IC采集助手插件】： 🚀平台：${platform} , 环境名: ${environment} , 当前搜索物料: ${JInputSearchValue} 不是当前任务的物料: ${currentTask.code}，无法上报任务！！！，请及时处理。`,
-                );
+                const toast = document.createElement("div");
+                toast.className = "ic-helper-toast";
+                toast.textContent = `当前搜索物料: ${JInputSearchValue} 不是当前任务的物料: ${currentTask.code}，无法上报任务！！！，请重新搜索。`;
+                document.body.appendChild(toast);
+
+                await window.autoFocusInputByHqw()
+                await navigator.clipboard.writeText(currentTask.code);
+                setTimeout(() => toast.remove(), 3000);
+
                 return false;
             }
         }
