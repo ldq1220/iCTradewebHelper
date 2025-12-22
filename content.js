@@ -264,6 +264,7 @@ async function autoReportTask(platform) {
                 toast.textContent = `当前搜索物料: ${searchMaterialCode} 不是当前任务的物料: ${currentTask.code}，无法上报任务！！！，请重新搜索。`;
                 document.body.appendChild(toast);
 
+                await window.clearInputByJyw()
                 await window.autoFocusInputByJyw()
                 await navigator.clipboard.writeText(currentTask.code);
                 setTimeout(() => toast.remove(), 3000);
@@ -282,6 +283,7 @@ async function autoReportTask(platform) {
                 document.body.appendChild(toast);
 
                 await window.autoFocusInputByHqw()
+                await window.clearInputByHqw()
                 await navigator.clipboard.writeText(currentTask.code);
                 setTimeout(() => toast.remove(), 3000);
 
